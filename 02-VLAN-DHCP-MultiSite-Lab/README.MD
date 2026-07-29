@@ -1,12 +1,12 @@
 
 # Network Project Documentation
 
-> **Project Name:**  02-VLAN-DHCP-MultiSite-Lab
-> **Version:** 1.0  
-> **Author:**  Nicholas Williams
-> **Date Created:**  July 29th 2026
-> **Last Updated:**  July 29th 2026
-> **Status:** Complete
+**Project Name:** 02-VLAN-DHCP-MultiSite-Lab  
+**Version:** 1.0  
+**Author:** Nicholas Williams  
+**Date Created:**  July 29th 2026  
+**Last Updated:**  July 29th 2026  
+**Status:** Complete  
 
 ---
 
