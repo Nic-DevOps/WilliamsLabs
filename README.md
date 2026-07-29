@@ -3,7 +3,7 @@
 A collection of networking projects focused on building, configuring, and troubleshooting enterprise network infrastructure using hands-on labs and simulations.
 
 ## Planned Projects
-
+- [ ] Basic Routing Network
 - [ ] VLAN configuration and inter-VLAN routing
 - [ ] DHCP and DNS services
 - [ ] Routing protocols (RIP, OSPF, BGP)
