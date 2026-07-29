@@ -4,7 +4,6 @@ A collection of networking projects focused on building, configuring, and troubl
 
 ## Planned Projects
 - [ ] Basic Routing Network
-- [ ] VLAN configuration and inter-VLAN routing
 - [ ] DHCP and DNS services
 - [ ] Routing protocols (RIP, OSPF, BGP)
 - [ ] Network security and firewall configuration
@@ -15,7 +14,7 @@ A collection of networking projects focused on building, configuring, and troubl
 
 ## Completed Projects
 
-- [ ] Project name - Brief description
+- [ ] [02-VLAN-DHCP-MultiSite-Lab](https://github.com/Nic-DevOps/Networking/tree/main/02-VLAN-DHCP-MultiSite-Lab)
 - [ ] Project name - Brief description
 
 ## Tools & Technologies
