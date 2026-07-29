@@ -11,7 +11,6 @@
 ---
 
 # 1. Project Overview
-
 ### Objective
 Design and implement a two-site network that demonstrates VLAN segmentation, inter-VLAN routing, DHCP services, and static routing between sites. Each site consists of a router and a Layer 3 switch, with separate VLANs for users and servers. The project focuses on building a functional routed network that allows devices to communicate both within and between sites.
 
@@ -103,9 +102,6 @@ The two sites are connected using a routed connection between their respective r
 The network uses static routing between sites, with Layer 3 switches responsible for local VLAN routing and routers responsible for forwarding traffic between sites. Each Layer 3 switch uses a default route pointing toward its local router, while routers use static routes to reach remote VLAN networks.
 
 ## Routing Tables Summary
-
-
-
 | Traffic | Routing Path |
 |---|---|
 | Site A User VLAN → Site A Server VLAN | SW1 performs inter-VLAN routing |
