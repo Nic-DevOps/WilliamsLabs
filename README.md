@@ -2,6 +2,11 @@
 
 A collection of networking projects focused on building, configuring, and troubleshooting enterprise network infrastructure using hands-on labs and simulations.
 
+
+
+## Completed Projects
+- [x] [01-Basic-Routing-Lab](https://github.com/Nic-DevOps/Networking/tree/main/01-Basic-Routing-Lab)
+
 ## Planned Projects
 - [ ] 02-Redundant-Switching-STP-EtherChannel-Lab
 - [ ] 03-VLAN-Trunking-Lab
@@ -15,5 +20,3 @@ A collection of networking projects focused on building, configuring, and troubl
 - [ ] 12-Network-Automation-Ansible-Lab
 
 
-## Completed Projects
-- [x] [01-Basic-Routing-Lab](https://github.com/Nic-DevOps/Networking/tree/main/01-Basic-Routing-Lab)

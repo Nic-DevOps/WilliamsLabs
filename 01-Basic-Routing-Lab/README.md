@@ -88,41 +88,12 @@ Traffic between LANs is forwarded through the router based on its routing table,
 ---
 
 
-## 6. Future Improvements
-### VLAN Implementation
+# 6. Future Improvements
 
-Replace the physically separated LAN design with logical network segmentation using VLANs. Instead of requiring a separate physical network for each group of users, VLANs will allow multiple logical networks to operate over the same switching infrastructure.
+The following improvements will extend the basic routing design into a more resilient enterprise network environment.
 
-Benefits:
-- Improved network segmentation
-- Easier management of user groups and devices
-
-
-### Inter-VLAN Routing
-
-Implement routing between VLANs using either:
-- Router-on-a-stick
-- Layer 3 switches using Switched Virtual Interfaces (SVIs)
-
-## Multi-Site Network
-
-Expand the network from a single site to two geographically separated sites connected by a WAN link.
-- Connect two independent LANs through routers.
-- Implement WAN addressing.
-- Configure static routing between sites.
-- Introduce dynamic routing protocols such as OSPF in later iterations.
-- Verify end-to-end connectivity between both sites.-
-
-
-## Additional Enhancements
-
-Future versions of this project may also include:
-
-- DHCP for automatic IP address assignment.
-- DNS services for name resolution.
-- Access Control Lists (ACLs) for traffic filtering.
-- Network Address Translation (NAT).
-- Redundant links and gateway redundancy.
-- Wireless networking with multiple SSIDs mapped to VLANs.
-- Network monitoring and logging.
-- Infrastructure automation using Ansible and Terraform.
+| Improvement | Description |
+|---|---|
+| Redundant Switching | Add additional switches and redundant links to improve network availability and provide backup paths during failures. |
+| Spanning Tree Protocol (STP) | Implement Layer 2 loop prevention to maintain a stable switching topology when redundant connections are introduced. |
+| EtherChannel | Combine multiple physical switch links into a single logical connection to increase bandwidth and provide link redundancy. |
