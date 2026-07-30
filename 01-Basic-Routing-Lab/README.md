@@ -1,6 +1,6 @@
 # Network Project Documentation
 
-**Project Name:** Basic Routing Network 
+**Project Name:** Basic Routing Lab 
 **Version:** 1.0  
 **Author:** Nicholas Williams  
 **Date Created:**  July 29th 2026
