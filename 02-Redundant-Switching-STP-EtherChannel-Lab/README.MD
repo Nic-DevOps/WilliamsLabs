@@ -53,19 +53,19 @@ Multiple switch connections provide alternate paths between devices. STP prevent
 
 # 3. Physical Layout
 
-![alt text](image.png)
+![alt text](image-4.png)
 
 ## Devices
 
 | Device | Model | Purpose |
 |---|---|---|
-| SW1 | Cisco 2960 | Primary Root Bridge |
-| SW2 | Cisco 2960 | Redundant Distribution Switch |
-| SW3 | Cisco 2960 | Redundant Distribution Switch |
-| SW4 | Cisco 2960 | Access Switch |
-| SW5 | Cisco 2960 | Access Switch |
+| Core1 | Cisco 3650 Layer 3 Switch | Primary Root Bridge |
+| Core2 | Cisco 3650 Layer 3 Switch | Secondary Root Bridge |
+| Core3 | Cisco 3650 Layer 3 Switch | Redundant Core Switch |
+| Access1 | Cisco 2960 Switch | Access Layer Switch |
+| Access2 | Cisco 2960 Switch | Access Layer Switch |
+| Access3 | Cisco 2960 Switch | Access Layer Switch |
 | PC1-PC10 | End Devices | Connectivity Testing |
-
 ---
 
 # 4. Switching Design
@@ -78,11 +78,11 @@ STP provides loop prevention, while EtherChannel provides increased bandwidth an
 
 # Spanning Tree Protocol (STP)
 
-STP maintains a loop-free Layer 2 topology by selecting the best path through the switching network and blocking redundant paths.
+STP maintains a loop-free Layer 2 topology by selecting the lowest-cost path to the root bridge and blocking redundant paths.
 
 ## STP Functions
 
-- Elects a Root Bridge.
+- The switch with the lowest Bridge ID becomes the root bridge.
 - Selects the best forwarding paths.
 - Blocks redundant links.
 - Restores connectivity after failures.
@@ -110,7 +110,11 @@ Expected Result:
 ```
 This bridge is the root
 ```
+![alt text](image-6.png)
 
+![alt text](image-5.png)
+
+![alt text](image-7.png)
 ---
 
 ## STP Port Roles
@@ -126,9 +130,14 @@ This bridge is the root
 
 # EtherChannel Design
 
-EtherChannel combines multiple physical Ethernet links into one logical Port Channel.
+EtherChannel combines multiple physical Ethernet links into a single logical link called a Port Channel. This increases bandwidth, provides link redundancy, and simplifies STP operation.
 
-This provides increased bandwidth, redundancy, and simplified STP operation.
+STP and EtherChannel work together by:
+
+- STP prevents Layer 2 loops by selecting the best path to the root bridge and blocking redundant paths.
+- Without EtherChannel, STP treats each physical link separately and may block unused links to prevent loops.
+- With EtherChannel, STP views the bundled links as one logical connection, allowing all member links to remain active.
+- If redundant EtherChannels create a loop, STP blocks the redundant Port Channel rather than individual physical links.
 
 ---
 
@@ -149,14 +158,14 @@ Example:
 
 ```
 interface range gigabitEthernet0/1-2
-
+switchport mode trunk
 channel-group 1 mode active
 
 exit
 
 interface port-channel 1
+switchport nonegotiate
 
-switchport mode trunk
 ```
 
 ---
@@ -165,25 +174,27 @@ switchport mode trunk
 
 | Port Channel | Connection | Interfaces | Protocol | Purpose |
 |---|---|---|---|---|
-| Po1 | SW1 ↔ SW2 | Gi0/1 - Gi0/2 | LACP | Redundant switch connection |
-| Po2 | SW1 ↔ SW3 | Gi0/3 - Gi0/4 | LACP | Redundant switch connection |
+| Po1 | CORE1 ↔ CORE2 | CORE1: Gi1/0/5-6<br>CORE2: Gi1/0/4-6 | LACP | Redundant core switch connection |
+| Po2 | CORE1 ↔ CORE3 | CORE1: Gi1/0/4, Gi1/0/7<br>CORE3: Gi1/0/6, Gi1/0/5 | LACP | Redundant core switch connection |
+| Po2 | CORE2 ↔ CORE3 | CORE2: Gi1/0/5, Gi1/0/7<br>CORE3: Gi1/0/7, Gi1/0/1 | LACP | Redundant core switch connection |
 
 ---
 
 # EtherChannel Verification
-
-## Verify Port Channels
-
 ```
 show etherchannel summary
 ```
 
-Expected Result:
+Core 1  
+![alt text](image-1.png)
 
-```
-Po1(SU)
-Po2(SU)
-```
+
+Core 2  
+![alt text](image-2.png)
+
+Core 3  
+![alt text](image-3.png)
+
 
 ## Verify Port Channel Interfaces
 
@@ -203,7 +214,7 @@ show interfaces port-channel
 2. Verify the Port Channel remains active.
 3. Confirm connectivity remains available.
 
-### Expected Result
+### Result
 
 - EtherChannel remains operational.
 - Traffic uses remaining links.
@@ -219,7 +230,7 @@ show interfaces port-channel
 2. Observe STP recalculation.
 3. Verify a blocked path transitions to forwarding.
 
-### Expected Result
+### Result
 
 - STP selects an alternate path.
 - Connectivity is restored automatically.
