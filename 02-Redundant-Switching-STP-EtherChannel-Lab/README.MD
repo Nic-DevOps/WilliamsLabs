@@ -96,7 +96,7 @@ SW1 is configured as the primary Root Bridge.
 ### Root Bridge Configuration
 
 ```
-spanning-tree vlan 1 priority 4096
+spanning-tree vlan 1 root primary
 ```
 
 ### Verification
