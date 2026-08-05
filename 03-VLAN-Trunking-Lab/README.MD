@@ -2,10 +2,10 @@
 **Version:** 1.0  
 **Author:** Nicholas Williams  
 **Date Created:** July 29th 2026  
-**Last Updated:** July 29th 2026  
+**Last Updated:** August 4th 2026  
 **Status:** Complete
 
-## Objective
+# Objective
 
 Design and implement a Layer 2 switching network using Virtual Local Area Networks (VLANs) and IEEE 802.1Q trunking.
 
@@ -218,12 +218,11 @@ The following order was used to configure VLANs, trunking, EtherChannels, and ST
    ![alt text](https://github.com/Nic-DevOps/Networking/blob/main/03-VLAN-Trunking-Lab/Ping%20Test.gif)
 
 
-# 16. Future Improvements
+# 6. Future Improvements
 | Improvement | Description |
 |---|---|
 | Inter-VLAN Routing | Enable communication between VLANs using Layer 3 switches while maintaining network segmentation. |
 | SVI Configuration | Create Switched Virtual Interfaces (SVIs) to provide VLAN gateways and enable Layer 3 routing. |
 | HSRP | Implement gateway redundancy by providing highly available default gateways for end devices. |
 | DHCP Relay | Allow centralized DHCP servers to provide IP addressing services across multiple VLANs. |
-| EtherChannel | Increase trunk bandwidth and provide link redundancy by combining multiple physical connections into a single logical interface. |
 | OSPF | Connect multiple routed networks dynamically using an interior gateway routing protocol. |

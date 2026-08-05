@@ -5,11 +5,11 @@ A collection of networking projects focused on building, configuring, and troubl
 
 
 ## Completed Projects
-- [x] [01-Basic-Routing-Lab](https://github.com/Nic-DevOps/Networking/tree/main/01-Basic-Routing-Lab)
-- [x] [02-Redundant-Switching-STP-EtherChannel-Lab](https://github.com/Nic-DevOps/Networking/tree/main/02-Redundant-Switching-STP-EtherChannel-Lab)
+- [x] [01-Basic-Routing-Lab](https://github.com/Nic-DevOps/Networking/blob/main/01-Basic-Routing-Lab/README.md)
+- [x] [02-Redundant-Switching-STP-EtherChannel-Lab](https://github.com/Nic-DevOps/Networking/blob/main/02-Redundant-Switching-STP-EtherChannel-Lab/README.MD)
+- [ ] [03-VLAN-Trunking-Lab](https://github.com/Nic-DevOps/Networking/blob/main/03-VLAN-Trunking-Lab/README.MD)
 
 ## Planned Projects
-- [ ] 03-VLAN-Trunking-Lab
 - [ ] 04-InterVLAN-Routing-Lab
 - [ ] 05-MultiSite-Static-Routing-Lab
 - [ ] 06-OSPF-Dynamic-Routing-Lab
