@@ -215,7 +215,7 @@ The following order was used to configure VLANs, trunking, EtherChannels, and ST
    PCs assigned to the same VLAN were able to communicate successfully, even when connected to different access switches. This confirms that VLANs are correctly extended across trunk links between switches.
    PCs assigned to different VLANs were unable to communicate, confirming that Layer 2 VLAN isolation is functioning as expected.
 
-   ![alt text](Ping Test.gif)
+   ![alt text](https://github.com/Nic-DevOps/Networking/blob/main/03-VLAN-Trunking-Lab/Ping%20Test.gif)
 
 
 # 16. Future Improvements
