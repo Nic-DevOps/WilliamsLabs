@@ -246,7 +246,7 @@ The following order was used to configure VLANs, trunking, EtherChannels, and ST
    ### Same VLAN
    Sales PC → Sales PC
 
-   ![alt text](https://github.com/Nic-DevOps/Networking/blob/main/04-InterVLAN-Routing-Lab/Intra%20Vlan%20ping%20test.gif)
+   ![alt text](https://github.com/Nic-DevOps/Networking/blob/main/04-InterVLAN-Routing-Lab/Inter%20Vlan%20ping%20test.gif)
 
 
   ### VLAN Gateway
