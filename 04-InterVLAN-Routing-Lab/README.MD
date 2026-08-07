@@ -2,7 +2,7 @@
 **Version:** 1.0  
 **Author:** Nicholas Williams  
 **Date Created:** August 4th 2026  
-**Last Updated:** August 4th 2026  
+**Last Updated:** August 6th 2026  
 **Status:** Complete
 
 # Objective
@@ -246,19 +246,19 @@ The following order was used to configure VLANs, trunking, EtherChannels, and ST
    ### Same VLAN
    Sales PC → Sales PC
 
-   ![alt text](https://github.com/Nic-DevOps/Networking/blob/main/04-InterVLAN-Routing-Lab/Intra Vlan ping test.gif)
+   ![alt text](https://github.com/Nic-DevOps/Networking/blob/main/04-InterVLAN-Routing-Lab/Intra%20Vlan%20ping%20test.gif)
 
 
   ### VLAN Gateway
    Tests router connection.
    Sales PC → 10.0.10.1
 
-   ![alt text](https://github.com/Nic-DevOps/Networking/blob/main/04-InterVLAN-Routing-Lab/Gateway ping test.gif)
+   ![alt text](https://github.com/Nic-DevOps/Networking/blob/main/04-InterVLAN-Routing-Lab/Gateway%20ping%20test.gif)
 
 
    ### Inter-VLAN Routing
    HR PC → Engineering PC
-   ![alt text](https://github.com/Nic-DevOps/Networking/blob/main/04-InterVLAN-Routing-Lab/Intra Vlan ping test.gif)
+   ![alt text](https://github.com/Nic-DevOps/Networking/blob/main/04-InterVLAN-Routing-Lab/Inter%20Vlan%20ping%20test.gif)
 
 
 # 6. Future Improvements
