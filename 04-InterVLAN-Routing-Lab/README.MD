@@ -251,14 +251,14 @@ The following order was used to configure VLANs, trunking, EtherChannels, and ST
 
   ### VLAN Gateway
    Tests router connection.
-   Sales PC → 10.0.10.1
+   Sales PC → VLAN 10 Gateway
 
    ![alt text](https://github.com/Nic-DevOps/Networking/blob/main/04-InterVLAN-Routing-Lab/Gateway%20ping%20test.gif)
 
 
    ### Inter-VLAN Routing
    HR PC → Engineering PC
-   ![alt text](https://github.com/Nic-DevOps/Networking/blob/main/04-InterVLAN-Routing-Lab/Inter%20Vlan%20ping%20test.gif)
+   ![alt text](https://github.com/Nic-DevOps/Networking/blob/main/04-InterVLAN-Routing-Lab/Intra%20Vlan%20ping%20test.gif)
 
 
 # 6. Future Improvements
