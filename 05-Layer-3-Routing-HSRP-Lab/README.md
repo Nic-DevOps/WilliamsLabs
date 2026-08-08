@@ -1,52 +1,50 @@
-**Project Name:** 04-InterVLAN-Routing-Lab
+**Project Name:** 05-Layer3-Switching-HSRP-Lab
 **Version:** 1.0  
 **Author:** Nicholas Williams  
-**Date Created:** August 4th 2026  
-**Last Updated:** August 6th 2026  
+**Date Created:** August 8th 2026  
+**Last Updated:** August 8th 2026  
 **Status:** Complete
 
 # Objective
-
-Build a redundant network using Layer 2 and Layer 3 switching concepts. 
+Build a redundant enterprise network using Layer 3 switching, inter-VLAN routing, HSRP, Rapid PVST+, and EtherChannel.
 
 ## Goals
 
 - Configure VLANs across multiple switches.
-- Configure IEEE 802.1Q trunk links between switches.
-- Implement Rapid PVST+ for loop prevention and redundancy.
-- Configure EtherChannel using LACP for redundant switch connections.
+- Configure IEEE 802.1Q trunk links.
+- Configure Rapid PVST+ for Layer 2 redundancy.
+- Configure LACP EtherChannels.
 - Configure PortFast and BPDU Guard on access ports.
-- Verify VLAN propagation across trunk links.
-- Verify STP root bridge selection and port states.
-- Configure Layer 3 switching using multilayer switches.
-- Create Switch Virtual Interfaces (SVIs) for VLAN gateways.
-- Enable inter-VLAN routing between different VLAN networks.
-- Verify routing between VLANs using Layer 3 switching.
-- Troubleshoot VLAN, STP, EtherChannel, and routing issues.
+- Configure Layer 3 switching and SVIs.
+- Enable inter-VLAN routing on the core switches.
+- Configure HSRP for redundant default gateways.
+- Configure a Layer 3 EtherChannel between core switches.
+- Verify HSRP failover and inter-VLAN connectivity.
 ---
 
 # 2. Network Topology
 
 ## Topology Type
 
-This topology uses a router-on-a-stick design for inter-VLAN routing. The access switches connect to the core switches using redundant trunk links with EtherChannel. The core switches provide Layer 2 switching, VLAN distribution, and RSTP redundancy. A router connects to the switching infrastructure through an 802.1Q trunk and provides routing between VLANs using router subinterfaces.
-
+This topology uses Layer 3 switching for inter-VLAN routing. Two multilayer core switches provide redundant SVIs and HSRP gateways, while access switches connect to both core switches using redundant trunk links.
 
 ## Advantages
 
-- Simple to configure and troubleshoot because routing occurs in one central location.
-- A single router interface can provide gateways for multiple VLANs.
-- 
+- HSRP provides redundant default gateways if one core switch fails.
+- Layer 3 switching provides faster inter-VLAN routing directly on the core switches.
+- Layer 3 EtherChannel provides increased bandwidth and redundancy between core switches.
+- The redundant core design improves overall network availability and scalability.
 ## Limitations
 
-- Limited scalability because all inter-VLAN traffic passes through one router interface
-- No Layer 3 redundancy unless additional routers and gateway redundancy protocols are added
-
+- The configuration is more complex than a router-on-a-stick design.
+- The network requires multilayer switches capable of Layer 3 routing.
+- Troubleshooting is more complex because multiple redundancy and routing technologies are involved.
+- The redundant design requires additional hardware, links, and configuration.
 ---
 
 # 3. Physical Layout
 
-![alt text](image-9.png)
+
 
 ## Devices
 
@@ -183,13 +181,7 @@ The following order was used to configure VLANs, trunking, EtherChannels, and ST
   
 
           
-   ## 7. Configure Rapid PVST+
-
-   ### Enable Rapid PVST+ on all switches
-   ```
-   spanning-tree mode rapid-pvst
-   ```
-   ### Set the STP root bridge
+   ## 7. Configure STP root and secondary root bridges
    Configure the primary root bridge on CORE1
    ```
    spanning-tree vlan 10,20,30,40 root primary
@@ -203,8 +195,8 @@ The following order was used to configure VLANs, trunking, EtherChannels, and ST
    ```
    show spanning-tree
    ```
-   Core SW1:  
-   ![alt text](image-10.png)
+   Core SW1:
+   ![alt text](image-6.png)
 
    ## Configure Router-on-a-Stick
    ```
@@ -270,7 +262,5 @@ The following order was used to configure VLANs, trunking, EtherChannels, and ST
 # 6. Future Improvements
 | Improvement | Description |
 |---|---|
-|Layer 3 Switching | Move inter-VLAN routing from the router to multilayer switches using Switch Virtual Interfaces (SVIs) |
-| HSRP | Implement gateway redundancy by providing highly available default gateways for end devices. |
 | OSPF | Connect multiple routed networks dynamically using an interior gateway routing protocol. |
 | DHCP Relay | Allow centralized DHCP servers to provide IP addressing services across multiple VLANs. |
