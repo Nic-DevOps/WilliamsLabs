@@ -2,7 +2,7 @@
 **Version:** 1.0  
 **Author:** Nicholas Williams  
 **Date Created:** August 4th 2026  
-**Last Updated:** August 6th 2026  
+**Last Updated:** August 8th 2026  
 **Status:** Complete
 
 # Objective
