@@ -9,9 +9,10 @@ A collection of networking projects focused on building, configuring, and troubl
 - [x] [02-Redundant-Switching-STP-EtherChannel-Lab](https://github.com/Nic-DevOps/Networking/blob/main/02-Redundant-Switching-STP-EtherChannel-Lab/README.MD)
 - [x] [03-VLAN-Trunking-Lab](https://github.com/Nic-DevOps/Networking/blob/main/03-VLAN-Trunking-Lab/README.MD)
 - [x] [04-InterVLAN-Routing-Lab](https://github.com/Nic-DevOps/Networking/blob/main/04-InterVLAN-Routing-Lab/README.MD)
+- [x] [05-Layer-3-Routing-HSRP-Lab](https://github.com/Nic-DevOps/Networking/blob/main/05-Layer-3-Routing-HSRP-Lab/README.MD)
 ## Planned Projects
-- [ ] 05-MultiSite-Static-Routing-Lab
-- [ ] 06-OSPF-Dynamic-Routing-Lab
+- [ ] 06-MultiSite-Static-Routing-Lab
+- [ ] 07-OSPF-Dynamic-Routing-Lab
 - [ ] 08-HSRP-VRRP-HighAvailability-Lab
 - [ ] 09-Network-Services-Infrastructure-Lab
 - [ ] 10-Network-Security-ACL-NAT-Firewall-Lab

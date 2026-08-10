@@ -183,7 +183,7 @@ The following order was used to configure VLANs, trunking, EtherChannels, and ST
   
 
           
-   ## 7. Configure Rapid PVST+
+   ## 5. Configure Rapid PVST+
 
    ### Enable Rapid PVST+ on all switches
    ```
@@ -206,7 +206,7 @@ The following order was used to configure VLANs, trunking, EtherChannels, and ST
    Core SW1:  
    ![alt text](image-10.png)
 
-   ## Configure Router-on-a-Stick
+   ## 6. Configure Router-on-a-Stick
    ```
    interface g0/0
    no shutdown
@@ -239,12 +239,12 @@ The following order was used to configure VLANs, trunking, EtherChannels, and ST
 
 
 
-   ## Configure Static IP address
+   ## 7. Configure Static IP address on PC
 
 
    ![alt text](image-8.png)
           
-   ## 9. Verify configuration and save changes
+   ## 6. Verify configuration and save changes
    
    ### Verification of Vlan segmentation
    VLAN segmentation was verified by testing connectivity between end devices.  
@@ -267,7 +267,7 @@ The following order was used to configure VLANs, trunking, EtherChannels, and ST
    ![alt text](https://github.com/Nic-DevOps/Networking/blob/main/04-InterVLAN-Routing-Lab/Intra%20Vlan%20ping%20test.gif)
 
 
-# 6. Future Improvements
+# 7. Future Improvements
 | Improvement | Description |
 |---|---|
 |Layer 3 Switching | Move inter-VLAN routing from the router to multilayer switches using Switch Virtual Interfaces (SVIs) |

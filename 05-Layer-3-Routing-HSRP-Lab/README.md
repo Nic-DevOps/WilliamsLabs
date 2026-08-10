@@ -5,7 +5,7 @@
 **Last Updated:** August 8th 2026  
 **Status:** Complete
 
-# Objective
+# 1. Objective
 Build a redundant enterprise network using Layer 3 switching, inter-VLAN routing, HSRP, Rapid PVST+, and EtherChannel.
 
 ## Goals
@@ -50,7 +50,6 @@ This topology uses Layer 3 switching for inter-VLAN routing. Two multilayer core
 
 | Device | Model | Purpose |
 |---|---|---|
-| R1 | Cisco ISR 4331 | Router |
 | CORE SW1 | Cisco 3560 Layer 3 Switch | Primary Core Switch |
 | CORE SW2 | Cisco 3560 Layer 3 Switch | Secondary Core Switch |
 | ACCESS SW1 | Cisco 2950 Switch | Access Layer Switch |
@@ -89,22 +88,24 @@ This topology uses Layer 3 switching for inter-VLAN routing. Two multilayer core
 | HR PC 1 | VLAN 30 | 10.0.30.10/24 | 10.0.30.1 |
 | HR PC 2 | VLAN 30 | 10.0.30.11/24 | 10.0.30.1 |
 
-# Gateway Design
+# 5. Gateway Design
 
-The router provides inter-VLAN routing using a router-on-a-stick configuration. A single physical router interface connects to the core switching layer through an 802.1Q trunk. Each VLAN is assigned a router subinterface that acts as the default gateway for devices within that VLAN.
+Inter-VLAN routing is provided by the Layer 3 core switches using Switch Virtual Interfaces (SVIs). Each VLAN has an SVI on both core switches, while HSRP provides a shared virtual default gateway for end devices.
 
-| VLAN | Name | Router Interface | Gateway IP Address |
-|---|---|---|---|
-| 10 | SALES | G0/0.10 | 10.0.10.1 |
-| 20 | ENGINEERING | G0/0.20 | 10.0.20.1 |
-| 30 | HR | G0/0.30 | 10.0.30.1 |
-| 40 | MANAGEMENT | G0/0.40 | 10.0.40.1 |
+The HSRP virtual IP is configured as the default gateway on all devices within the corresponding VLAN.
+
+| VLAN | Name | CORE-SW1 SVI | CORE-SW2 SVI | HSRP Virtual Gateway|
+|---|---|---|---|---|
+| 10 | SALES | 10.0.10.2 | 10.0.10.3 | 10.0.10.1 |
+| 20 | ENGINEERING | 10.0.20.2 | 10.0.20.3 | 10.0.20.1 |
+| 30 | HR | 10.0.30.2 | 10.0.30.3 | 10.0.30.1 |
+| 40 | MANAGEMENT | 10.0.40.2 | 10.0.40.3 | 10.0.40.1 |
 
 
 
 
-# 5. Configuration order
-The following order was used to configure VLANs, trunking, EtherChannels, and STP.
+# 6. Configuration order
+The following order was used to configure VLANs, trunking, EtherChannels, Rapid PVST+, Layer 3 switching, and HSRP.   
    ## 1. Configure basic switch settings
    - Set hostname
    - Configure basic management settings
@@ -175,13 +176,10 @@ The following order was used to configure VLANs, trunking, EtherChannels, and ST
    show etherchannel summary
    show interfaces trunk
    ```
-   ![alt text](image-3.png) 
    ![alt text](image-5.png)
-   ![alt text](image-4.png)
-  
-
+   ![alt text](image-6.png)
           
-   ## 7. Configure STP root and secondary root bridges
+   ## 5. Configure STP root and secondary root bridges
    Configure the primary root bridge on CORE1
    ```
    spanning-tree vlan 10,20,30,40 root primary
@@ -196,71 +194,164 @@ The following order was used to configure VLANs, trunking, EtherChannels, and ST
    show spanning-tree
    ```
    Core SW1:
-   ![alt text](image-6.png)
+  ![alt text](image-7.png)
 
-   ## Configure Router-on-a-Stick
+  Core SW2: 
+  ![alt text](image-8.png)
+
+   Access SW1-4 are similar configurations:
+   ![alt text](image-9.png)
+
+   ## 6. Configure Layer 3 EtherChannel
+
+   Convert the core-to-core EtherChannel into a routed link.
+
+   CORE-SW1
    ```
-   interface g0/0
+   interface range g1/0/5-6
+   no switchport
+   channel-group 10 mode active
+   ```
+   ```
+   interface port-channel 10
+   no switchport
+   ip address 10.0.0.1 255.255.255.252
    no shutdown
    ```
-   Subinterfaces:
+   CORE-SW2
    ```
-   interface g0/0.10
-   encapsulation dot1q 10
-   ip address 10.0.10.1 255.255.255.0
-
-   interface g0/0.20
-   encapsulation dot1q 20
-   ip address 10.0.20.1 255.255.255.0
-
-   interface g0/0.30
-   encapsulation dot1q 30
-   ip address 10.0.30.1 255.255.255.0
-
-   interface g0/0.40
-   encapsulation dot1q 40
-   ip address 10.0.40.1 255.255.255.0
+   interface range g1/0/5-6
+   no switchport
+   channel-group 10 mode active
    ```
+   ```
+   interface port-channel 10
+   no switchport
+   ip address 10.0.0.2 255.255.255.252
+   no shutdown
+   ```
+   Verify:
+   ```
+   show etherchannel summary
+   show ip interface brief
+   ```
+   ![alt text](image-10.png)
+
+   
+
+   ## 7. Configure SVIs 
+
+   Enable Layer 3 routing:
+   ```
+   ip routing
+   ```
+   Configure the SVIs on CORE-SW1:
+   ```
+   interface vlan 10
+   ip address 10.0.10.2 255.255.255.0
+   no shutdown
+
+   interface vlan 20
+   ip address 10.0.20.2 255.255.255.0
+   no shutdown
+
+   interface vlan 30
+   ip address 10.0.30.2 255.255.255.0
+   no shutdown
+
+   interface vlan 40
+   ip address 10.0.40.2 255.255.255.0
+   no shutdown
+   ```
+   Configure the SVIs on CORE-SW2 using the .3 addresses.
 
    Verify:
    ```
    show ip interface brief
    ```
+   Core SW1:
+   ![alt text](image-1.png)
 
-   ![alt text](image-7.png)
-
-
-
-   ## Configure Static IP address
-
-
-   ![alt text](image-8.png)
-          
-   ## 9. Verify configuration and save changes
+   Core SW2:
+   ![alt text](image.png)
    
-   ### Verification of Vlan segmentation
-   VLAN segmentation was verified by testing connectivity between end devices.  
+   ## 8. Configure HSRP
 
-   ### Same VLAN
-   Sales PC → Sales PC
+   Configure the HSRP virtual gateway on each SVI.
 
-   ![alt text](https://github.com/Nic-DevOps/Networking/blob/main/04-InterVLAN-Routing-Lab/Inter%20Vlan%20ping%20test.gif)
+   Example for VLAN 10 on CORE-SW1:
+   ```
+   interface vlan 10
+   standby 10 ip 10.0.10.1
+   standby 10 priority 110 #Higher priority wins the Active role.
+   standby 10 preempt
+   ```
+   On CORE-SW2:
+   ```
+   interface vlan 10
+   standby 10 ip 10.0.10.1
+   standby 10 priority 100 #Lower priority is assigned Standby role
+   standby 10 preempt
+   ```
+   Repeat for VLANs 20, 30, and 40.
+
+   Verify:
+   ```
+   show standby brief
+   ```
+   Core SW1:
+   ![alt text](image-2.png)
+   Core SW2:
+   ![alt text](image-3.png)
+
+   ## 9. Configure End Devices
+   Assign static IP addresses to PCs and use the HSRP virtual IP as the default gateway.
+   ![alt text](image-4.png)
+
+         
+# 7. Verify configuration and save changes
+
+### Verification of Vlan segmentation
+VLAN segmentation was verified by testing connectivity between end devices.  
+
+### Intra-VLAN
+Sales PC → Sales PC
+
+![alt text](https://github.com/Nic-DevOps/Networking/blob/main/05-Layer-3-Routing-HSRP-Lab/Intra%20Vlan%20Ping%20Test.gif)
 
 
-  ### VLAN Gateway
-   Tests router connection.
-   Sales PC → VLAN 10 Gateway
+### Default Gateway
+Tests router connection.
+HR PC → VLAN 30 Gateway
 
-   ![alt text](https://github.com/Nic-DevOps/Networking/blob/main/04-InterVLAN-Routing-Lab/Gateway%20ping%20test.gif)
-
-
-   ### Inter-VLAN Routing
-   HR PC → Engineering PC
-   ![alt text](https://github.com/Nic-DevOps/Networking/blob/main/04-InterVLAN-Routing-Lab/Intra%20Vlan%20ping%20test.gif)
+![alt text](https://github.com/Nic-DevOps/Networking/blob/main/05-Layer-3-Routing-HSRP-Lab/Gateway%20ping%20test.gif)
 
 
-# 6. Future Improvements
+### Inter-VLAN Routing
+Engineering PC → Manager PC
+![alt text](https://github.com/Nic-DevOps/Networking/blob/main/05-Layer-3-Routing-HSRP-Lab/Inter%20Vlan%20Ping%20Test.gif)
+
+### Test HSRP Failover
+
+Verify the active and standby HSRP roles:
+```
+show standby brief
+```
+![alt text](image-12.png)
+![alt text](image-11.png)
+
+Shut down the active SVI or core switch and verify that the standby core assumes the virtual gateway.
+
+
+Verify that connectivity remains available after failover.
+
+![alt text](https://github.com/Nic-DevOps/Networking/blob/main/05-Layer-3-Routing-HSRP-Lab/HSRP%20failover.gif)
+
+
+
+# 8. Future Improvements
 | Improvement | Description |
 |---|---|
+| HSRP Load Sharing | Configure VLAN-based HSRP priorities so CORE-SW1 and CORE-SW2 each act as the active gateway for different VLANs, enabling load distribution. |
 | OSPF | Connect multiple routed networks dynamically using an interior gateway routing protocol. |
 | DHCP Relay | Allow centralized DHCP servers to provide IP addressing services across multiple VLANs. |
