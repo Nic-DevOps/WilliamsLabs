@@ -351,6 +351,5 @@ Verify that connectivity remains available after failover.
 # 8. Future Improvements
 | Improvement | Description |
 |---|---|
-| HSRP Load Sharing | Configure VLAN-based HSRP priorities so CORE-SW1 and CORE-SW2 each act as the active gateway for different VLANs, enabling load distribution. |
-| OSPF | Connect multiple routed networks dynamically using an interior gateway routing protocol. |
-| DHCP Relay | Allow centralized DHCP servers to provide IP addressing services across multiple VLANs. |
+| Multi-Site Routing | Extend the existing infrastructure beyond the primary campus and connect a new branch network. |
+| Static Routing | Initially connect multiple sites using manually configured routes to establish communication between remote networks. |

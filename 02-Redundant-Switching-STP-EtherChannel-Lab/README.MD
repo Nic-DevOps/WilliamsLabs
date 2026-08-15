@@ -12,10 +12,8 @@
 # 1. Project Overview
 
 ## Objective
+Upgrade the original office network with redundant switching infrastructure to eliminate single points of failure and provide multiple paths between network devices.
 
-Design and implement a redundant Layer 2 switching network using multiple switches, Spanning Tree Protocol (STP), and EtherChannel.
-
-The project demonstrates how enterprise networks maintain high availability by preventing switching loops and providing redundant network paths.
 
 ## Goals
 
@@ -239,7 +237,9 @@ show interfaces port-channel
 
 # Future Improvements
 
-The following improvements will extend the switching infrastructure into a more scalable enterprise network environment.
+As the office grows, placing every device in the same broadcast domain becomes increasingly inefficient. Different departments may also require their own logical networks for organizational and security reasons.
+
+The existing redundant switching infrastructure provides the foundation for introducing logical segmentation without requiring a completely separate physical network for every department.
 
 | Improvement | Description |
 |---|---|

@@ -6,8 +6,7 @@
 **Status:** Complete
 
 # Objective
-
-Build a redundant network using Layer 2 and Layer 3 switching concepts. 
+Upgrade the segmented network by introducing Layer 3 routing between the VLANs created in the previous lab.
 
 ## Goals
 
@@ -268,6 +267,11 @@ The following order was used to configure VLANs, trunking, EtherChannels, and ST
 
 
 # 7. Future Improvements
+Inter-VLAN routing solves the communication problem, but the organization's reliance on Layer 3 gateways introduces another concern.
+
+As the network becomes more important to daily operations, the device providing the default gateway becomes a potential single point of failure. If that device or its associated path fails, users may lose access to other VLANs even though the Layer 2 switching infrastructure remains operational.
+
+
 | Improvement | Description |
 |---|---|
 |Layer 3 Switching | Move inter-VLAN routing from the router to multilayer switches using Switch Virtual Interfaces (SVIs) |

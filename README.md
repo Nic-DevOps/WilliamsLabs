@@ -1,3 +1,6 @@
+Williams Labs is a hands-on infrastructure and networking project that explores how a network evolves as an organization grows. Starting with a small office and a handful of connected systems, each project introduces new requirements, technologies, and failure scenarios. The environment gradually evolves from basic connectivity into a resilient, multi-site enterprise infrastructure.
+
+
 # Networking Projects
 
 A collection of networking projects focused on building, configuring, and troubleshooting enterprise network infrastructure using hands-on labs and simulations.
@@ -13,7 +16,7 @@ A collection of networking projects focused on building, configuring, and troubl
 ## Planned Projects
 - [ ] 06-MultiSite-Static-Routing-Lab
 - [ ] 07-OSPF-Dynamic-Routing-Lab
-- [ ] 08-HSRP-VRRP-HighAvailability-Lab
+- [ ] 08-HighAvailability-Lab
 - [ ] 09-Network-Services-Infrastructure-Lab
 - [ ] 10-Network-Security-ACL-NAT-Firewall-Lab
 - [ ] 11-WAN-VPN-SiteToSite-Lab
