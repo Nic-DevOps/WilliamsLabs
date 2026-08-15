@@ -12,7 +12,7 @@
 # 1. Project Overview
 
 ### Objective
-This project demonstrates the fundamentals of routing by connecting two independent local area networks (LANs) using a single router. Each LAN contains end devices connected through a Layer 2 switch, with the router providing the Layer 3 routing function between the networks.
+Build the initial network infrastructure for a small office and establish basic connectivity between multiple network segments.
 
 ### Goals
 - Configure router interfaces with IP addresses
@@ -90,7 +90,7 @@ Traffic between LANs is forwarded through the router based on its routing table,
 
 # 6. Future Improvements
 
-The following improvements will extend the basic routing design into a more resilient enterprise network environment.
+The initial network provides connectivity, but it has an important limitation: there is little tolerance for hardware or link failures.
 
 | Improvement | Description |
 |---|---|

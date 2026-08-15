@@ -6,7 +6,7 @@
 **Status:** Complete
 
 # 1. Objective
-Build a redundant enterprise network using Layer 3 switching, inter-VLAN routing, HSRP, Rapid PVST+, and EtherChannel.
+Upgrade the existing inter-VLAN routing infrastructure into a resilient Layer 3 network capable of maintaining gateway availability during device or path failures.
 
 ## Goals
 
@@ -101,9 +101,6 @@ The HSRP virtual IP is configured as the default gateway on all devices within t
 | 30 | HR | 10.0.30.2 | 10.0.30.3 | 10.0.30.1 |
 | 40 | MANAGEMENT | 10.0.40.2 | 10.0.40.3 | 10.0.40.1 |
 
-
-
-
 # 6. Configuration order
 The following order was used to configure VLANs, trunking, EtherChannels, Rapid PVST+, Layer 3 switching, and HSRP.   
    ## 1. Configure basic switch settings
@@ -113,7 +110,6 @@ The following order was used to configure VLANs, trunking, EtherChannels, Rapid 
    no ip domain-lookup 
    ```
    
-          
    ## 2. Create VLANs on each switch
    ```
    vlan 10 
@@ -156,7 +152,7 @@ The following order was used to configure VLANs, trunking, EtherChannels, Rapid 
    ```
    show interfaces status
    ```
- ![alt text](image-2.png)
+   ![alt text](image-2.png)
 
    ## 4. Configure EtherChannels
    ```
@@ -194,10 +190,10 @@ The following order was used to configure VLANs, trunking, EtherChannels, Rapid 
    show spanning-tree
    ```
    Core SW1:
-  ![alt text](image-7.png)
+   ![alt text](image-7.png)
 
-  Core SW2: 
-  ![alt text](image-8.png)
+   Core SW2: 
+   ![alt text](image-8.png)
 
    Access SW1-4 are similar configurations:
    ![alt text](image-9.png)
@@ -236,8 +232,6 @@ The following order was used to configure VLANs, trunking, EtherChannels, Rapid 
    show ip interface brief
    ```
    ![alt text](image-10.png)
-
-   
 
    ## 7. Configure SVIs 
 
@@ -350,8 +344,11 @@ Verify that connectivity remains available after failover.
 
 
 # 8. Future Improvements
+The local network is now segmented and resilient, but the organization is beginning to outgrow a single location.
+
+A new branch office is planned, creating a requirement for users and services at different locations to communicate.
+
 | Improvement | Description |
 |---|---|
-| HSRP Load Sharing | Configure VLAN-based HSRP priorities so CORE-SW1 and CORE-SW2 each act as the active gateway for different VLANs, enabling load distribution. |
-| OSPF | Connect multiple routed networks dynamically using an interior gateway routing protocol. |
-| DHCP Relay | Allow centralized DHCP servers to provide IP addressing services across multiple VLANs. |
+| Multi-Site Routing | Extend the existing infrastructure beyond the primary campus and connect a new branch network. |
+| Static Routing | Initially connect multiple sites using manually configured routes to establish communication between remote networks. |

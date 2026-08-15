@@ -2,26 +2,32 @@
 **Version:** 1.0
 **Author:** Nicholas Williams
 **Date Created:** August 12th 2026
-**Last Updated:** August 12th 2026
+**Last Updated:** August 15th 2026
 **Status:** In Progress
 
 # 1. Objective
 
-Build a multi-site enterprise network using routers, Layer 2 switches, IPv4 addressing, point-to-point WAN links, and static routing.
+Extend the existing Williams Labs enterprise network by connecting the primary campus to additional branch locations using routed WAN links and static routing.
+
+The previous lab established a resilient Layer 3 campus network using Layer 3 switching, inter-VLAN routing, HSRP, Rapid PVST+, and EtherChannel.
+
+As the organization grows beyond a single location, the existing infrastructure must be extended to provide connectivity between geographically separate networks.
+
+This lab introduces routed WAN links and manually configured static routes while preserving the existing VLAN, Layer 3 switching, and HSRP infrastructure.
 
 ## Goals
 
-* Configure three separate network sites.
-* Configure LAN addressing for each site.
-* Configure point-to-point routed WAN links.
-* Configure static routes between sites.
-* Configure default gateways for end devices.
-* Verify directly connected and static routes.
-* Verify end-to-end connectivity between sites.
-* Use `ping` and `traceroute` to identify packet paths.
-* Analyze routing tables using `show ip route`.
-* Troubleshoot common static-routing failures.
-* Understand the limitations of static routing in a multi-site environment.
+- Extend the existing enterprise network to multiple locations.
+- Configure routed WAN links between sites.
+- Configure separate IP networks for each site.
+- Configure static routes between remote networks.
+- Configure default routes where appropriate.
+- Understand next-hop routing between multiple routers.
+- Verify end-to-end connectivity between sites.
+- Use `show ip route` to examine static and connected routes.
+- Use `traceroute` to observe the path between sites.
+- Troubleshoot missing and incorrect static routes.
+- Understand the limitations of manually configured routing as the network grows.
 
 ---
 
@@ -29,785 +35,522 @@ Build a multi-site enterprise network using routers, Layer 2 switches, IPv4 addr
 
 ## Topology Type
 
-This topology uses three routers connected through a triangular WAN topology.
+This topology extends the existing Layer 3 campus network into a multi-site environment.
 
-Each router provides connectivity to a separate LAN. Static routes are manually configured on each router to allow traffic to reach the remote LANs.
+The primary campus retains the redundant Layer 3 core switches and HSRP configuration from Lab 5. Additional routers represent branch locations and provide routed WAN connections between the sites.
+
+Static routes are used to provide connectivity between the LAN networks at each location.
 
 ## Advantages
 
-* Simple to understand and configure.
-* No dynamic routing protocol is required.
-* Provides predictable routing behavior.
-* Useful for learning how routers make forwarding decisions.
-* Appropriate for small and relatively stable networks.
+- Extends the existing enterprise network to multiple locations.
+- Static routes provide predictable and deterministic routing.
+- The routing table clearly demonstrates how routers learn remote networks.
+- Routed WAN links provide a foundation for future dynamic routing protocols.
+- The existing HSRP and Layer 3 campus design remains intact.
 
 ## Limitations
 
-* Routes must be manually configured.
-* Network changes require manual updates.
-* Configuration becomes increasingly complex as the number of networks grows.
-* Static routes do not automatically adapt to link failures.
-* Troubleshooting becomes more difficult as the topology expands.
+- Static routes must be manually configured and maintained.
+- Adding additional sites increases the number of routes that must be managed.
+- Changes to the topology require manual routing updates.
+- Static routing does not automatically adapt to link failures.
+- The design will become increasingly difficult to scale as additional locations are added.
 
 ---
 
 # 3. Physical Layout
 
-```text
-                         R1
-                       /    \
-                      /      \
-                     /        \
-                    R2--------R3
-                    |          |
-                   SW2        SW3
-                    |          |
-                  Users      Users
-                  
-                    |
-                   SW1
-                    |
-                  Users
-```
 
 ## Devices
 
-| Device | Model                | Purpose                     |
-| ------ | -------------------- | --------------------------- |
-| R1     | Cisco Router         | Site 1 Router               |
-| R2     | Cisco Router         | Site 2 Router               |
-| R3     | Cisco Router         | Site 3 Router               |
-| SW1    | Cisco Layer 2 Switch | Site 1 Access Switch        |
-| SW2    | Cisco Layer 2 Switch | Site 2 Access Switch        |
-| SW3    | Cisco Layer 2 Switch | Site 3 Access Switch        |
-| PC1    | End Device           | Site 1 Connectivity Testing |
-| PC2    | End Device           | Site 2 Connectivity Testing |
-| PC3    | End Device           | Site 3 Connectivity Testing |
+| Device | Model | Purpose |
+|---|---|---|
+| CORE SW1 | Cisco 3560 Layer 3 Switch | Primary Core Switch |
+| CORE SW2 | Cisco 3560 Layer 3 Switch | Secondary Core Switch |
+| ACCESS SW1 | Cisco 2950 Switch | Primary Campus Access Layer |
+| ACCESS SW2 | Cisco 2950 Switch | Primary Campus Access Layer |
+| ACCESS SW3 | Cisco 2950 Switch | Primary Campus Access Layer |
+| ACCESS SW4 | Cisco 2950 Switch | Primary Campus Access Layer |
+| R1 | Cisco Router | Primary Campus WAN Router |
+| R2 | Cisco Router | Branch 1 WAN Router |
+| R3 | Cisco Router | Branch 2 WAN Router |
+| PC1-PC10 | End Devices | Primary Campus User Connectivity |
+| Branch PCs | End Devices | Remote Site Connectivity Testing |
 
 ---
 
-# 4. Network Addressing
+# 4. VLAN Design
 
-## LAN Assignments
+The existing VLAN design from Lab 5 remains unchanged at the primary campus.
 
-| Site   | Network      | Router IP | Purpose    |
-| ------ | ------------ | --------- | ---------- |
-| Site 1 | 10.0.10.0/24 | 10.0.10.1 | Site 1 LAN |
-| Site 2 | 10.0.20.0/24 | 10.0.20.1 | Site 2 LAN |
-| Site 3 | 10.0.30.0/24 | 10.0.30.1 | Site 3 LAN |
+## VLAN Assignments
 
-## WAN Assignments
-
-| Connection | Network       | Router A   | Router B    |
-| ---------- | ------------- | ---------- | ----------- |
-| R1 ↔ R2    | 10.0.100.0/30 | 10.0.100.1 | 10.0.100.2  |
-| R1 ↔ R3    | 10.0.100.4/30 | 10.0.100.5 | 10.0.100.6  |
-| R2 ↔ R3    | 10.0.100.8/30 | 10.0.100.9 | 10.0.100.10 |
+| VLAN | Name | Network | Default Gateway | Purpose |
+|------|--------------|---------------|----------------|----------------|
+| 10 | SALES | 10.0.10.0/24 | 10.0.10.1 | User workstations and devices for the Sales department |
+| 20 | ENGINEERING | 10.0.20.0/24 | 10.0.20.1 | User workstations and devices for the Engineering department |
+| 30 | HR | 10.0.30.0/24 | 10.0.30.1 | User workstations and devices for the HR department |
+| 40 | MANAGEMENT | 10.0.40.0/24 | 10.0.40.1 | Manager and executive user devices |
+| 999 | Unused VLAN | N/A | N/A | Unused native VLAN for trunk security |
 
 ---
 
-## End Device Addressing
+## VLAN Addressing
 
-| Device | Network | IP Address    | Default Gateway |
-| ------ | ------- | ------------- | --------------- |
-| PC1    | Site 1  | 10.0.10.10/24 | 10.0.10.1       |
-| PC2    | Site 2  | 10.0.20.10/24 | 10.0.20.1       |
-| PC3    | Site 3  | 10.0.30.10/24 | 10.0.30.1       |
+The primary campus end devices retain the addressing from Lab 5.
 
----
-
-# 5. Routing Design
-
-Each router is directly connected to its local LAN and to two WAN links.
-
-Static routes are used to reach remote LAN networks.
-
-| Router | Destination  | Next Hop    |
-| ------ | ------------ | ----------- |
-| R1     | 10.0.20.0/24 | 10.0.100.2  |
-| R1     | 10.0.30.0/24 | 10.0.100.6  |
-| R2     | 10.0.10.0/24 | 10.0.100.1  |
-| R2     | 10.0.30.0/24 | 10.0.100.10 |
-| R3     | 10.0.10.0/24 | 10.0.100.5  |
-| R3     | 10.0.20.0/24 | 10.0.100.9  |
-
-The routers will therefore contain three types of relevant routes:
-
-* **Connected routes** — networks directly attached to the router.
-* **Local routes** — the router's own interface addresses.
-* **Static routes** — manually configured routes to remote networks.
+| Device | VLAN | IP Address | Default Gateway |
+|---|---|---|---|
+| Manager PC 1 | VLAN 40 | 10.0.40.10/24 | 10.0.40.1 |
+| Sales PC 1 | VLAN 10 | 10.0.10.10/24 | 10.0.10.1 |
+| Sales PC 2 | VLAN 10 | 10.0.10.11/24 | 10.0.10.1 |
+| Engineering PC 1 | VLAN 20 | 10.0.20.10/24 | 10.0.20.1 |
+| Engineering PC 2 | VLAN 20 | 10.0.20.11/24 | 10.0.20.1 |
+| Engineering PC 3 | VLAN 20 | 10.0.20.12/24 | 10.0.20.1 |
+| Manager PC 2 | VLAN 40 | 10.0.40.11/24 | 10.0.40.1 |
+| Engineering PC 4 | VLAN 20 | 10.0.20.13/24 | 10.0.20.1 |
+| Engineering PC 5 | VLAN 20 | 10.0.20.14/24 | 10.0.20.1 |
+| HR PC 1 | VLAN 30 | 10.0.30.10/24 | 10.0.30.1 |
+| HR PC 2 | VLAN 30 | 10.0.30.11/24 | 10.0.30.1 |
 
 ---
 
-# 6. Configuration Order
+# 5. Site Addressing
 
-The following order was used to configure the routers, LANs, WAN links, and static routes.
+The existing primary campus networks are extended by adding separate networks for each branch.
 
-## 1. Configure Basic Router Settings
+## Site LANs
 
-Set the hostname and disable DNS lookup.
+| Site | Network | Purpose |
+|---|---|---|
+| Primary Campus | 10.0.10.0/24 - 10.0.40.0/24 | Existing enterprise VLANs |
+| Branch 1 | 10.0.20.0/24 | Branch 1 LAN |
+| Branch 2 | 10.0.30.0/24 | Branch 2 LAN |
 
-### R1
+> The branch networks should remain distinct from any existing VLAN networks in the primary campus when the final topology is implemented. Addressing can be adjusted if required by the topology.
 
-```cisco
-hostname R1
-no ip domain-lookup
-```
+## WAN Links
 
-### R2
-
-```cisco
-hostname R2
-no ip domain-lookup
-```
-
-### R3
-
-```cisco
-hostname R3
-no ip domain-lookup
-```
+| Link | Network | Device A | Device B |
+|---|---|---|---|
+| Primary ↔ Branch 1 | 10.0.100.0/30 | R1: 10.0.100.1 | R2: 10.0.100.2 |
+| Primary ↔ Branch 2 | 10.0.100.4/30 | R1: 10.0.100.5 | R3: 10.0.100.6 |
 
 ---
 
-## 2. Configure Site 1 LAN
+# 6. Routing Design
 
-Configure the LAN-facing interface on R1.
+The primary campus continues to use Layer 3 switching and HSRP for local inter-VLAN routing.
 
-```cisco
-interface GigabitEthernet0/0
-ip address 10.0.10.1 255.255.255.0
-no shutdown
-```
+The WAN routers provide connectivity between locations.
+
+Static routes are configured on the routers so that each router knows how to reach networks that are not directly connected.
+
+The routing relationship is:
+
+                    Branch 1
+                   10.1.20.0/24
+                        |
+                       R2
+                        |
+                10.0.100.0/30
+                        |
+                        R1
+                        |
+                10.0.100.4/30
+                        |
+                       R3
+                        |
+                   Branch 2
+                   10.2.30.0/24
+                        |
+                  Primary Campus
+             10.0.10.0/24 - 10.0.40.0/24
+
+---
+
+# 7. Configuration Order
+
+The existing infrastructure from Lab 5 should be recreated first.
+
+The following configuration sections contain only the changes required to extend that infrastructure into a multi-site network.
+
+## 1. Configure the WAN Routers
+
+Configure basic settings on R1, R2, and R3.
+
+    hostname R1
+    no ip domain-lookup
+
+Repeat for R2 and R3 using the appropriate hostname.
+
+---
+
+## 2. Configure R1 WAN Interfaces
+
+R1 provides the WAN connections from the primary location to the branch routers.
+
+### R1 → Branch 1
+
+    interface g0/0
+    ip address 10.0.100.1 255.255.255.252
+    no shutdown
+
+### R1 → Branch 2
+
+    interface g0/1
+    ip address 10.0.100.5 255.255.255.252
+    no shutdown
 
 Verify:
 
-```cisco
-show ip interface brief
-```
+    show ip interface brief
+
+Test directly connected WAN neighbors:
+
+    ping 10.0.100.2
+    ping 10.0.100.6
 
 ---
 
-## 3. Configure Site 2 LAN
+## 3. Configure R2
 
-Configure the LAN-facing interface on R2.
+R2 represents Branch 1.
 
-```cisco
-interface GigabitEthernet0/0
-ip address 10.0.20.1 255.255.255.0
-no shutdown
-```
+Configure the WAN interface:
+
+    interface g0/0
+    ip address 10.0.100.2 255.255.255.252
+    no shutdown
+
+Configure the Branch 1 LAN interface:
+
+    interface g0/1
+    ip address 10.1.20.1 255.255.255.0
+    no shutdown
 
 Verify:
 
-```cisco
-show ip interface brief
-```
+    show ip interface brief
+
+Test connectivity to R1:
+
+    ping 10.0.100.1
 
 ---
 
-## 4. Configure Site 3 LAN
+## 4. Configure R3
 
-Configure the LAN-facing interface on R3.
+R3 represents Branch 2.
 
-```cisco
-interface GigabitEthernet0/0
-ip address 10.0.30.1 255.255.255.0
-no shutdown
-```
+Configure the WAN interface:
+
+    interface g0/0
+    ip address 10.0.100.6 255.255.255.252
+    no shutdown
+
+Configure the Branch 2 LAN interface:
+
+    interface g0/1
+    ip address 10.2.30.1 255.255.255.0
+    no shutdown
 
 Verify:
 
-```cisco
-show ip interface brief
-```
+    show ip interface brief
+
+Test connectivity to R1:
+
+    ping 10.0.100.5
 
 ---
 
-## 5. Configure R1 ↔ R2 WAN Link
+## 5. Configure Static Routes
 
-### R1
+Static routes must be configured so each router knows how to reach networks that are not directly connected.
 
-```cisco
-interface GigabitEthernet0/1
-ip address 10.0.100.1 255.255.255.252
-no shutdown
-```
+### R1 — Routes to Branch Networks
 
-### R2
+R1 needs routes to the LAN networks behind R2 and R3.
 
-```cisco
-interface GigabitEthernet0/1
-ip address 10.0.100.2 255.255.255.252
-no shutdown
-```
+    ip route 10.1.20.0 255.255.255.0 10.0.100.2
+    ip route 10.2.30.0 255.255.255.0 10.0.100.6
 
 Verify:
 
-```cisco
-show ip interface brief
-```
+    show ip route
 
-Test connectivity:
+Expected routes:
 
-```cisco
-R1# ping 10.0.100.2
-```
+    S    10.1.20.0/24 [1/0] via 10.0.100.2
+    S    10.2.30.0/24 [1/0] via 10.0.100.6
 
 ---
 
-## 6. Configure R1 ↔ R3 WAN Link
+### 6. Configure R2 Static Routes
 
-### R1
+R2 needs routes to the primary campus networks.
 
-```cisco
-interface GigabitEthernet0/2
-ip address 10.0.100.5 255.255.255.252
-no shutdown
-```
+    ip route 10.0.10.0 255.255.255.0 10.0.100.1
+    ip route 10.0.20.0 255.255.255.0 10.0.100.1
+    ip route 10.0.30.0 255.255.255.0 10.0.100.1
+    ip route 10.0.40.0 255.255.255.0 10.0.100.1
 
-### R3
+R2 can also reach Branch 2 through R1:
 
-```cisco
-interface GigabitEthernet0/1
-ip address 10.0.100.6 255.255.255.252
-no shutdown
-```
+    ip route 10.2.30.0 255.255.255.0 10.0.100.1
 
 Verify:
 
-```cisco
-show ip interface brief
-```
-
-Test connectivity:
-
-```cisco
-R1# ping 10.0.100.6
-```
+    show ip route
 
 ---
 
-## 7. Configure R2 ↔ R3 WAN Link
+### 7. Configure R3 Static Routes
 
-### R2
+R3 needs routes to the primary campus networks.
 
-```cisco
-interface GigabitEthernet0/2
-ip address 10.0.100.9 255.255.255.252
-no shutdown
-```
+    ip route 10.0.10.0 255.255.255.0 10.0.100.5
+    ip route 10.0.20.0 255.255.255.0 10.0.100.5
+    ip route 10.0.30.0 255.255.255.0 10.0.100.5
+    ip route 10.0.40.0 255.255.255.0 10.0.100.5
 
-### R3
+R3 can also reach Branch 1 through R1:
 
-```cisco
-interface GigabitEthernet0/2
-ip address 10.0.100.10 255.255.255.252
-no shutdown
-```
+    ip route 10.1.20.0 255.255.255.0 10.0.100.5
 
 Verify:
 
-```cisco
-show ip interface brief
-```
-
-Test connectivity:
-
-```cisco
-R2# ping 10.0.100.10
-```
+    show ip route
 
 ---
 
-## 8. Verify Directly Connected Routes
+### 8. Configure Branch End Devices
 
-Before configuring static routes, examine the routing tables.
+Configure the branch hosts with addresses from their respective LAN networks.
 
-```cisco
-show ip route
-```
+#### Branch 1 Host
 
-R1 should have directly connected routes similar to:
+    IP Address:      10.1.20.10
+    Subnet Mask:     255.255.255.0
+    Default Gateway: 10.1.20.1
 
-```text
-C    10.0.10.0/24
-C    10.0.100.0/30
-C    10.0.100.4/30
-```
+#### Branch 2 Host
 
-R2 should have:
-
-```text
-C    10.0.20.0/24
-C    10.0.100.0/30
-C    10.0.100.8/30
-```
-
-R3 should have:
-
-```text
-C    10.0.30.0/24
-C    10.0.100.4/30
-C    10.0.100.8/30
-```
-
-At this point, the routers know about their directly connected networks but do not yet know how to reach the remote LANs.
+    IP Address:      10.2.30.10
+    Subnet Mask:     255.255.255.0
+    Default Gateway: 10.2.30.1
 
 ---
 
-## 9. Configure Static Routes on R1
+### 9. Verify Routing
 
-R1 requires routes to the Site 2 and Site 3 LANs.
+Verify the routing table on each router:
 
-```cisco
-ip route 10.0.20.0 255.255.255.0 10.0.100.2
-ip route 10.0.30.0 255.255.255.0 10.0.100.6
-```
+    show ip route
 
-Verify:
+Connected routes should appear as:
 
-```cisco
-show ip route
-```
+    C
 
-The routes should appear as:
+Static routes should appear as:
 
-```text
-S    10.0.20.0/24 [1/0] via 10.0.100.2
-S    10.0.30.0/24 [1/0] via 10.0.100.6
-```
+    S
 
----
+The objective is to understand that each router knows about:
 
-## 10. Configure Static Routes on R2
+Connected Networks
 
-R2 requires routes to the Site 1 and Site 3 LANs.
++
 
-```cisco
-ip route 10.0.10.0 255.255.255.0 10.0.100.1
-ip route 10.0.30.0 255.255.255.0 10.0.100.10
-```
+Static Routes
 
-Verify:
++
 
-```cisco
-show ip route
-```
+Default Route
 
 ---
 
-## 11. Configure Static Routes on R3
+### 10. Test End-to-End Connectivity
 
-R3 requires routes to the Site 1 and Site 2 LANs.
+Test from the routers first.
 
-```cisco
-ip route 10.0.10.0 255.255.255.0 10.0.100.5
-ip route 10.0.20.0 255.255.255.0 10.0.100.9
-```
+#### R1
 
-Verify:
+    ping 10.1.20.1
+    ping 10.2.30.1
 
-```cisco
-show ip route
-```
+#### R2
 
----
+    ping 10.0.10.2
+    ping 10.2.30.1
 
-## 12. Configure End Devices
+#### R3
 
-Assign the appropriate static addressing to each PC.
+    ping 10.0.10.2
+    ping 10.1.20.1
 
-### PC1
+Then test from the end devices.
 
-```text
-IP Address:      10.0.10.10
-Subnet Mask:     255.255.255.0
-Default Gateway: 10.0.10.1
-```
+### Primary Campus → Branch 1
 
-### PC2
+    ping 10.1.20.10
 
-```text
-IP Address:      10.0.20.10
-Subnet Mask:     255.255.255.0
-Default Gateway: 10.0.20.1
-```
+#### Primary Campus → Branch 2
 
-### PC3
+    ping 10.2.30.10
 
-```text
-IP Address:      10.0.30.10
-Subnet Mask:     255.255.255.0
-Default Gateway: 10.0.30.1
-```
+#### Branch 1 → Primary Campus
 
----
+    ping 10.0.10.10
 
-# 7. Verify Configuration and Save Changes
+#### Branch 2 → Primary Campus
 
-## Verify Interface Status
+    ping 10.0.10.10
 
-On each router:
 
-```cisco
-show ip interface brief
-```
+# 12. Trace the Path
 
-All required interfaces should be:
+Use `traceroute` to observe how traffic travels between locations.
 
-```text
-Status: up
-Protocol: up
-```
+From R1:
+
+    traceroute 10.1.20.10
+
+From R2:
+
+    traceroute 10.2.30.10
+
+From an end device:
+
+    tracert 10.2.30.10
+
+The path should demonstrate that traffic passes through the appropriate WAN routers before reaching the remote network.
 
 ---
 
-## Verify Routing Tables
+# 13. Test Default Routes
 
-```cisco
-show ip route
-```
-
-Confirm that each router contains:
-
-* Connected routes
-* Local routes
-* Static routes
-
-Static routes should be identified by:
-
-```text
-S
-```
-
----
-
-## Test WAN Connectivity
-
-### R1
-
-```cisco
-ping 10.0.100.2
-ping 10.0.100.6
-```
-
-### R2
-
-```cisco
-ping 10.0.100.1
-ping 10.0.100.10
-```
-
-### R3
-
-```cisco
-ping 10.0.100.5
-ping 10.0.100.9
-```
-
----
-
-## Test LAN Gateway Connectivity
-
-### PC1 → Site 1 Gateway
-
-```text
-ping 10.0.10.1
-```
-
-### PC2 → Site 2 Gateway
-
-```text
-ping 10.0.20.1
-```
-
-### PC3 → Site 3 Gateway
-
-```text
-ping 10.0.30.1
-```
-
----
-
-## Test Inter-Site Connectivity
-
-### Site 1 → Site 2
-
-```text
-PC1 → 10.0.20.10
-```
-
-### Site 1 → Site 3
-
-```text
-PC1 → 10.0.30.10
-```
-
-### Site 2 → Site 1
-
-```text
-PC2 → 10.0.10.10
-```
-
-### Site 2 → Site 3
-
-```text
-PC2 → 10.0.30.10
-```
-
-### Site 3 → Site 1
-
-```text
-PC3 → 10.0.10.10
-```
-
-### Site 3 → Site 2
-
-```text
-PC3 → 10.0.20.10
-```
-
----
-
-# 8. Trace Packet Paths
-
-Use `traceroute` from the routers:
-
-```cisco
-traceroute 10.0.30.10
-```
-
-Or from end devices:
-
-```text
-tracert 10.0.30.10
-```
-
-For example, traffic from Site 1 to Site 3 should follow:
-
-```text
-PC1
- ↓
-R1
- ↓
-R3
- ↓
-PC3
-```
-
-Traffic from Site 1 to Site 2 should follow:
-
-```text
-PC1
- ↓
-R1
- ↓
-R2
- ↓
-PC2
-```
-
-This demonstrates how the static routing table determines the next hop for a packet.
-
----
-
-# 9. Static Route Concepts
-
-## Next-Hop Static Route
-
-The preferred configuration in this lab uses the next-hop address.
+Configure a default route as an additional exercise.
 
 Example:
 
-```cisco
-ip route 10.0.20.0 255.255.255.0 10.0.100.2
-```
+    ip route 0.0.0.0 0.0.0.0 <next-hop>
 
-This tells R1:
+Verify:
 
-```text
-To reach 10.0.20.0/24,
-send the packet to 10.0.100.2.
-```
+    show ip route
 
----
+The route should appear as:
 
-## Exit-Interface Static Route
+    S*
 
-A static route can also specify an exit interface.
-
-```cisco
-ip route 10.0.20.0 255.255.255.0 GigabitEthernet0/1
-```
-
-This tells the router which interface to use to forward the packet.
+Compare the behavior of a specific static route with a default route.
 
 ---
 
-## Default Route
+# 14. Static Routing Troubleshooting
 
-A default route is used when no more specific route exists.
+Deliberately introduce routing problems and troubleshoot them.
 
-```cisco
-ip route 0.0.0.0 0.0.0.0 <next-hop>
-```
+## Exercise 1 — Missing Route
 
-The default route appears in the routing table as:
+Remove one of the static routes from R1.
 
-```text
-S*
-```
+    no ip route 10.1.20.0 255.255.255.0 10.0.100.2
 
-A default route is particularly useful for networks where one router acts as an exit point toward an upstream network or the Internet.
+Test connectivity to Branch 1.
 
----
+Determine:
 
-# 10. Troubleshooting Exercises
-
-## Exercise 1 — Remove a Static Route
-
-Remove R1's route to Site 3:
-
-```cisco
-no ip route 10.0.30.0 255.255.255.0 10.0.100.6
-```
-
-Test:
-
-```text
-PC1 → PC3
-```
-
-Use:
-
-```cisco
-show ip route
-```
-
-Determine why the connection fails.
-
-Restore the route:
-
-```cisco
-ip route 10.0.30.0 255.255.255.0 10.0.100.6
-```
+- Why the route disappeared.
+- What happens to the packet.
+- How the routing table changes.
+- How connectivity can be restored.
 
 ---
 
 ## Exercise 2 — Incorrect Next Hop
 
-Change one static route to use an incorrect next-hop address.
+Configure an incorrect next-hop address.
 
-Example:
+    ip route 10.1.20.0 255.255.255.0 10.0.100.6
 
-```cisco
-ip route 10.0.30.0 255.255.255.0 10.0.100.2
-```
+Test connectivity and determine why the route does not reach the intended destination.
 
-Test connectivity and determine why the route does not work as expected.
-
-Use:
-
-```cisco
-show ip route
-ping
-traceroute
-```
-
-Restore the correct next hop afterward.
+Restore the correct route afterward.
 
 ---
 
-## Exercise 3 — Incorrect Default Gateway
+## Exercise 3 — Missing Return Route
 
-Change PC1's default gateway to an incorrect address.
+Remove the route from a branch router back toward the primary campus.
 
-Test:
+Test connectivity from both directions.
 
-```text
-PC1 → 10.0.10.1
-PC1 → 10.0.20.10
-```
+Determine why:
 
-Determine why communication with remote networks fails.
+Source → Destination
 
-Restore:
+can fail even when the destination network is correctly configured.
 
-```text
-10.0.10.1
-```
+Restore the missing return route.
 
 ---
 
-## Exercise 4 — Shut Down a WAN Interface
+# 15. Save Configuration
 
-Administratively shut down one WAN interface.
+Save the completed configuration on each device.
 
-Example:
+    copy running-config startup-config
 
-```cisco
-interface GigabitEthernet0/1
-shutdown
-```
+Verify:
 
-Observe:
-
-```cisco
-show ip interface brief
-show ip route
-```
-
-Test connectivity afterward.
-
-Restore the interface:
-
-```cisco
-no shutdown
-```
+    show startup-config
 
 ---
 
-# 11. Questions
+# 16. Verification Checklist
 
-1. Why can R1 reach R2's WAN interface without a static route?
-
-2. Why can't R1 initially reach the `10.0.20.0/24` network?
-
-3. What does the `S` designation represent in `show ip route`?
-
-4. What does the `S*` designation represent?
-
-5. What happens when a router receives a packet for a network that does not exist in its routing table?
-
-6. Why is a return route required for successful two-way communication?
-
-7. What is the difference between a next-hop static route and an exit-interface static route?
-
-8. Why do static routes become difficult to manage as a network grows?
-
-9. What happens to the static route when its next-hop interface becomes unavailable?
-
-10. How would a dynamic routing protocol improve this network?
-
-11. What advantage does the triangular R1-R2-R3 topology provide?
-
-12. If the R1-R3 link fails, can traffic from Site 1 still reach Site 3 with the current static routing configuration? Explain why or why not.
+- [ ] Existing primary campus infrastructure recreated.
+- [ ] R1 configured as the primary WAN router.
+- [ ] R2 configured as Branch 1 router.
+- [ ] R3 configured as Branch 2 router.
+- [ ] WAN links configured.
+- [ ] Branch LANs configured.
+- [ ] Static routes configured.
+- [ ] Routing tables verified.
+- [ ] Primary campus can reach Branch 1.
+- [ ] Primary campus can reach Branch 2.
+- [ ] Branch 1 can reach the primary campus.
+- [ ] Branch 2 can reach the primary campus.
+- [ ] End-to-end connectivity verified.
+- [ ] Traceroute performed.
+- [ ] Default-route behavior explored.
+- [ ] Static-route troubleshooting exercises completed.
+- [ ] Configurations saved.
 
 ---
 
-# 12. Future Improvements
+# 17. Future Improvements
 
-| Improvement            | Description                                                                               |
-| ---------------------- | ----------------------------------------------------------------------------------------- |
-| OSPF                   | Replace manually configured routes with dynamic route exchange between the three routers. |
-| Floating Static Routes | Configure backup static routes with a higher administrative distance.                     |
-| DHCP                   | Provide automatic IP addressing to hosts at each site.                                    |
-| DNS                    | Add centralized or distributed name resolution.                                           |
-| WAN Redundancy         | Configure alternate WAN paths between sites.                                              |
-| ACLs                   | Control traffic between sites using access control lists.                                 |
-| NAT                    | Provide Internet connectivity through an edge router.                                     |
-| Monitoring             | Add logging, SNMP, or network monitoring to observe WAN and routing status.               |
+The multi-site network now provides connectivity between multiple locations, but the routing design introduces a new operational problem.
 
----
+Every remote network must be manually configured on the appropriate routers. As the organization adds more branches and redundant paths, the number of static routes will grow rapidly.
 
+A change to the topology may also require administrators to manually update routing tables across multiple devices.
+
+**Problem to solve:**
+
+> How can the routers automatically learn about remote networks and adapt when the topology changes without requiring every route to be manually configured?
+
+The next stage will replace the manually maintained routing relationships with **OSPF**, allowing routers to dynamically discover networks and calculate paths through the multi-site infrastructure.
+
+| Improvement | Description |
+|---|---|
+| OSPF | Replace manually configured routes with dynamic routing so routers can automatically learn remote networks and adapt to topology changes. |
+| OSPF Cost & Path Selection | Configure and examine OSPF metrics to understand how routers select preferred paths. |
+| Route Summarization | Reduce the size of routing tables as the number of networks and locations grows. |
+| WAN Redundancy | Add additional WAN paths between locations and allow dynamic routing to select an alternate path when a link fails. |
+| DHCP Relay | Allow centralized DHCP services to provide addressing to hosts across the newly connected remote networks. |

@@ -7,9 +7,9 @@
 
 # Objective
 
-Design and implement a Layer 2 switching network using Virtual Local Area Networks (VLANs) and IEEE 802.1Q trunking.
+Upgrade the existing redundant switching infrastructure by introducing logical network segmentation with VLANs and extending those VLANs across switch-to-switch trunk links.
 
-This project demonstrates how enterprise networks use VLANs to separate broadcast domains while allowing multiple VLANs to traverse between switches using a single physical trunk connection.
+This lab separates the organization into logical networks while preserving the existing physical switching infrastructure.
 
 ## Goals
 
@@ -219,6 +219,8 @@ The following order was used to configure VLANs, trunking, EtherChannels, and ST
 
 
 # 6. Future Improvements
+The network is now segmented, but that segmentation introduces a new limitation: devices in different VLANs cannot communicate with one another by default. This is desirable from a Layer 2 perspective, but the organization still needs controlled communication between departments. For example, users in the Sales VLAN may need to access services located in another VLAN.
+
 | Improvement | Description |
 |---|---|
 | Inter-VLAN Routing | Enable communication between VLANs using Layer 3 switches while maintaining network segmentation. |
