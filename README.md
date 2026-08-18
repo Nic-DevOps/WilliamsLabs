@@ -13,7 +13,7 @@ A collection of networking projects focused on building, configuring, and troubl
 - [x] [03-VLAN-Trunking-Lab](https://github.com/Nic-DevOps/WilliamsLabs/blob/main/03-VLAN-Trunking-Lab/README.MD)
 - [x] [04-InterVLAN-Routing-Lab](https://github.com/Nic-DevOps/WilliamsLabs/blob/main/04-InterVLAN-Routing-Lab/README.MD)
 - [x] [05-Layer-3-Routing-HSRP-Lab](https://github.com/Nic-DevOps/WilliamsLabs/blob/main/05-Layer-3-Routing-HSRP-Lab/README.md)
-- [ ] [06-MultiSite-Static-Routing-Lab](https://github.com/Nic-DevOps/WilliamsLabs/blob/main/06-MultiSite-Static-Routing-Lab/README.md)
+- [x] [06-MultiSite-Static-Routing-Lab](https://github.com/Nic-DevOps/WilliamsLabs/blob/main/06-MultiSite-Static-Routing-Lab/README.md)
 ## Planned Projects
 - [ ] 07-OSPF-Dynamic-Routing-Lab
 - [ ] 08-HighAvailability-Lab
