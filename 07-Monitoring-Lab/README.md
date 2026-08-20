@@ -328,7 +328,8 @@ The dashboard should monitor:
 * CPU utilization
 
 * Memory utilization
-ciscoMemoryPoolUsed{job="snmp", ciscoMemoryPoolName="Processor"} / (ciscoMemoryPoolUsed{job="snmp", ciscoMemoryPoolName="Processor"} + ciscoMemoryPoolFree{job="snmp", ciscoMemoryPoolName="Processor"}) * 100
+  ```promql
+  ciscoMemoryPoolUsed{job="snmp", ciscoMemoryPoolName="Processor"} / (ciscoMemoryPoolUsed{job="snmp", ciscoMemoryPoolName="Processor"} + ciscoMemoryPoolFree{job="snmp", ciscoMemoryPoolName="Processor"}) * 100
 
 ## Recommended Override Configurations
 
