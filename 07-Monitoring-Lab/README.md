@@ -344,5 +344,6 @@ The dashboard should monitor:
 | Improvement | Description |
 |---|---|
 | Multi-Site Expansion | Set up local monitoring points or link setups together to track multiple locations (HQ, Site A, Site B) as the network grows. |
+| Host Monitoring | Install Node Exporter on Linux and Windows servers across the network to track system-level health metrics like CPU usage, available memory, disk space, and operating system performance. |
 | Automatic Device Discovery | Switch from manually typing in IP addresses to automatically pulling new network devices straight from Netbox. |
 | Automated Alerts | Add automated notifications so you get instant alerts if a device goes down or a network link fails across any location. |
