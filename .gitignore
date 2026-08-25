@@ -1,1 +1,6 @@
 NetBox/
+.venv/
+.venv313/
+Provisioning/
+Networking/
+Python-Scripts/
