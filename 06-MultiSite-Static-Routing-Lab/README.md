@@ -85,6 +85,7 @@ This topology extends the existing Layer 3 campus network into a multi-site envi
 They're the same VLAN ID but different Layer-2 broadcast domains.
 
 ---
+
 # 5. Site Addressing
 
 The existing HQ networks are extended by adding separate networks for each branch.
@@ -97,6 +98,21 @@ The existing HQ networks are extended by adding separate networks for each branc
 | Site A | 10.20.0.0/16 | Site A LAN |
 | Site B | 10.30.0.0/16 | Site B LAN |
 | Infrastructure | 10.0.100.0/24 | Point to point connecting infrastructure|
+
+## Core ↔  Router Links
+| Link | Network | Device A | Device B |
+|---|---|---|---|
+| HQ Core SW01 ↔ HQ Router01 | 10.0.100.0/30 | HQ Core SW01: 10.0.100.1 | HQ-Router01: 10.0.100.2|
+| HQ Core SW02 ↔ HQ Router01 | 10.0.100.4/30 | HQ Core SW02: 10.0.100.5 | HQ-Router01: 10.0.100.6|
+| Site A Core SW01 ↔ Site A Router01 | 10.0.100.8/30 | Site A Core SW01: 10.0.100.9 | SiteA-Router01: 10.0.100.10|
+| Site B Core SW01 ↔ Site B Router01 | 10.0.100.12/30 | Site B Core SW01: 10.0.100.13 | SiteB-Router01: 10.0.100.14|
+
+## Router ↔ ISP Links
+| Link | Network | Device A | Device B |
+|---|---|---|---|
+| HQ ↔ ISP | 10.0.100.16/30 | HQ-Router01: 10.0.100.17 | ISP-Router01: 10.0.100.18 |
+| Site A ↔ ISP | 10.0.100.20/30 | SiteA-Router01: 10.0.100.21 | ISP-Router01: 10.0.100.22 |
+| Site B ↔ ISP | 10.0.100.24/30 | SiteB-Router01: 10.0.100.25 | ISP-Router01: 10.0.100.26|
 
 ## SVI IP Addressing Plan
 
@@ -135,23 +151,13 @@ For Site B, just like Site A, the SVI on the single core switch acts as the defa
 
 > **Note on VLAN 999 (BLACKHOLE):** This VLAN has "No subnet." Therefore, you **do not** configure an `interface vlan 999` (SVI) for it on any of the core switches. It exists purely at Layer 2 as a place to park unused or unauthorized physical access ports so they cannot 
 
-## Core ↔  Router Links
-| Link | Network | Device A | Device B |
-|---|---|---|---|
-| HQ Core SW01 ↔ HQ Router01 | 10.0.100.0/30 | HQ Core SW01: 10.0.100.1 | HQ-Router01: 10.0.100.2|
-| HQ Core SW02 ↔ HQ Router01 | 10.0.100.4/30 | HQ Core SW02: 10.0.100.5 | HQ-Router01: 10.0.100.6|
-| Site A Core SW01 ↔ Site A Router01 | 10.0.100.8/30 | Site A Core SW01: 10.0.100.9 | SiteA-Router01: 10.0.100.10|
-| Site B Core SW01 ↔ Site B Router01 | 10.0.100.12/30 | Site B Core SW01: 10.0.100.13 | SiteB-Router01: 10.0.100.14|
 
-## Router ↔ ISP Links
-| Link | Network | Device A | Device B |
-|---|---|---|---|
-| HQ ↔ ISP | 10.0.100.16/30 | HQ-Router01: 10.0.100.17 | ISP-Router01: 10.0.100.18 |
-| Site A ↔ ISP | 10.0.100.20/30 | SiteA-Router01: 10.0.100.21 | ISP-Router01: 10.0.100.22 |
-| Site B ↔ ISP | 10.0.100.24/30 | SiteB-Router01: 10.0.100.25 | ISP-Router01: 10.0.100.26|
+
+
 
 
 ---
+
 # 6. Configuration Order
 
 Recreate the [existing Lab 5 infrastructure](https://github.com/Nic-DevOps/Networking/blob/main/05-Layer-3-Routing-HSRP-Lab/README.MD) Access switches, VLANs, trunks, EtherChannel, SVIs, and HSRP as applicable, then extend it into the multi-site network. 

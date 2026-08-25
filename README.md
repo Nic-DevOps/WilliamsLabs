@@ -15,9 +15,8 @@ A collection of networking projects focused on building, configuring, and troubl
 - [x] [05-Layer-3-Routing-HSRP-Lab](https://github.com/Nic-DevOps/WilliamsLabs/blob/main/05-Layer-3-Routing-HSRP-Lab/README.md)
 - [x] [06-MultiSite-Static-Routing-Lab](https://github.com/Nic-DevOps/WilliamsLabs/blob/main/06-MultiSite-Static-Routing-Lab/README.md)
 - [x] [07-Monitoring-Lab](https://github.com/Nic-DevOps/WilliamsLabs/blob/main/07-Monitoring-Lab/README.md)
+- [x] [08-OSPF-Dynamic-Routing-Lab](https://github.com/Nic-DevOps/WilliamsLabs/blob/main/08-OSPF-Dynamic-Routing-Lab/README.md)
 ## Planned Projects
-- [ ] 07-OSPF-Dynamic-Routing-Lab
-- [ ] 08-HighAvailability-Lab
 - [ ] 09-Network-Services-Infrastructure-Lab
 - [ ] 10-Network-Security-ACL-NAT-Firewall-Lab
 - [ ] 11-WAN-VPN-SiteToSite-Lab
