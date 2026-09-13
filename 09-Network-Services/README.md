@@ -452,8 +452,17 @@ scrape_configs:
 
 ```
 
-
+## Grafana configuration
 The up metric is used to display device availability.
+
+![alt text](image-13.png)
+
+The Table visualization with a Organize fields by name Transformation is used to order the visual. 
+
+![alt text](image-2.png)
+![alt text](image-11.png)
+![alt text](image-12.png)
+
 
 # 9. Verification and Testing
 
@@ -468,15 +477,6 @@ Site | Expected Network
 HQ | 10.10.10.0/24
 Site A | 10.20.10.0/24
 Site B | 10.30.10.0/24
-
-For each client:
-
-- Confirm it received an IP address from the correct subnet.
-- Confirm the default gateway is correct.
-- Ping the default gateway.
-- Ping the DHCP server.
-
-This verifies that DHCP scopes, relay, routing, and gateway configuration are working.
 
 ## HQ: 
 
