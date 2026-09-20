@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Williams Labs</title>
+<meta name="description" content="Infrastructure, networking and DevOps portfolio — enterprise-style routing, switching, monitoring and automation labs, built and documented from the ground up.">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="nav-inner">
+    <a href="index.html" class="brand"><span class="dot"></span>Williams Labs</a>
+    <nav class="main-nav">
+      <a href="index.html" class="active">Home</a>
+      <a href="index.html#projects">Projects</a>
+      <a href="index.html#monitoring">Monitoring</a>
+      <a href="index.html#technologies">Technologies</a>
+      <a href="https://github.com/Nic-DevOps/WilliamsLabs" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="wrap">
+    <div class="eyebrow">Networking &middot; Linux &middot; DevOps &middot; Monitoring</div>
+    <h1>Building infrastructure.</h1>
+    <p class="lead">A hands-on environment for exploring enterprise networking, Linux systems administration, observability, and DevOps practices — documented lab by lab, with the monitoring stack watching it all live.</p>
+    <a href="#projects" class="btn">Explore the labs</a>
+    <a href="https://github.com/Nic-DevOps/WilliamsLabs" target="_blank" rel="noopener" class="btn btn-ghost" style="margin-left:0.75rem;">View on GitHub</a>
+  </div>
+</section>
+
+<section id="monitoring">
+  <div class="wrap">
+    <h2 class="section-title">Live Status</h2>
+    <p class="section-desc">Pulled straight from the Prometheus/Grafana monitoring stack running on the homelab, exposed through a Cloudflare Tunnel. If the tunnel or the monitoring VM is offline, this panel says so rather than showing stale data.</p>
+    <div class="status-widget" data-status-widget data-status-url="https://status.williamslabs.ca/api/status" id="status-widget">
+      <div class="status-widget-head"><h3>Infrastructure Status</h3></div>
+      <div class="status-banner">Connecting to status feed&hellip;</div>
+    </div>
+  </div>
+</section>
+
+<section id="projects">
+  <div class="wrap">
+    <h2 class="section-title">Projects</h2>
+    <p class="section-desc">Each lab builds on the last — starting from basic routing and growing into a resilient, monitored, multi-site enterprise network.</p>
+    <div class="grid">
+
+      <a class="card" href="projects/01-basic-routing.html">
+        <span class="status-pill complete">Complete</span>
+        <h3>01 &middot; Basic Routing Lab</h3>
+        <p>Four-LAN office network with a single router providing inter-VLAN connectivity and default gateways.</p>
+        <div class="tags"><span class="tag">Cisco IOS</span><span class="tag">Routing</span></div>
+      </a>
+
+      <a class="card" href="projects/02-redundant-switching.html">
+        <span class="status-pill complete">Complete</span>
+        <h3>02 &middot; Redundant Switching, STP &amp; EtherChannel</h3>
+        <p>Redundant mesh switching topology with STP loop prevention and LACP EtherChannel link aggregation.</p>
+        <div class="tags"><span class="tag">STP</span><span class="tag">LACP</span></div>
+      </a>
+
+      <a class="card" href="projects/03-vlan-trunking.html">
+        <span class="status-pill complete">Complete</span>
+        <h3>03 &middot; VLAN Trunking Lab</h3>
+        <p>Logical segmentation into four department VLANs, extended across switches over 802.1Q trunks.</p>
+        <div class="tags"><span class="tag">VLANs</span><span class="tag">802.1Q</span></div>
+      </a>
+
+      <a class="card" href="projects/04-intervlan-routing.html">
+        <span class="status-pill complete">Complete</span>
+        <h3>04 &middot; Inter-VLAN Routing Lab</h3>
+        <p>Router-on-a-stick design providing Layer 3 routing between VLANs via subinterfaces.</p>
+        <div class="tags"><span class="tag">Router-on-a-Stick</span><span class="tag">SVI</span></div>
+      </a>
+
+      <a class="card" href="projects/05-l3-hsrp.html">
+        <span class="status-pill complete">Complete</span>
+        <h3>05 &middot; Layer 3 Switching &amp; HSRP</h3>
+        <p>Redundant multilayer core switches with SVIs and HSRP for highly available default gateways.</p>
+        <div class="tags"><span class="tag">HSRP</span><span class="tag">L3 Switching</span></div>
+      </a>
+
+      <a class="card" href="projects/06-multisite-static.html">
+        <span class="status-pill complete">Complete</span>
+        <h3>06 &middot; Multi-Site Static Routing</h3>
+        <p>Extended the campus network to HQ, Site A and Site B over routed WAN links through a simulated ISP.</p>
+        <div class="tags"><span class="tag">Static Routing</span><span class="tag">WAN</span></div>
+      </a>
+
+      <a class="card" href="projects/07-monitoring.html">
+        <span class="status-pill complete">Complete</span>
+        <h3>07 &middot; Network Monitoring</h3>
+        <p>Prometheus + SNMP Exporter + Grafana stack deployed on a Debian VM to monitor the whole lab in real time.</p>
+        <div class="tags"><span class="tag">Prometheus</span><span class="tag">Grafana</span><span class="tag">SNMP</span></div>
+      </a>
+
+      <a class="card" href="projects/08-ospf.html">
+        <span class="status-pill complete">Complete</span>
+        <h3>08 &middot; OSPF Dynamic Routing</h3>
+        <p>Replaced manually configured static routes with OSPF across HQ, Site A and Site B for automatic convergence.</p>
+        <div class="tags"><span class="tag">OSPF</span><span class="tag">Area 0</span></div>
+      </a>
+
+      <a class="card" href="projects/09-network-services.html">
+        <span class="status-pill progress">In Progress</span>
+        <h3>09 &middot; Network Services (DHCP)</h3>
+        <p>Centralized Kea DHCP with relay across sites, SSH management, and monitoring extended to all three locations.</p>
+        <div class="tags"><span class="tag">DHCP</span><span class="tag">SSH</span><span class="tag">Kea</span></div>
+      </a>
+
+      <a class="card" href="projects/netbox.html">
+        <span class="status-pill progress">In Progress</span>
+        <h3>NetBox &middot; Source of Truth</h3>
+        <p>NetBox 4.6.8 on Debian, standing up DCIM/IPAM as the infrastructure source of truth for the lab.</p>
+        <div class="tags"><span class="tag">NetBox</span><span class="tag">IPAM</span><span class="tag">DCIM</span></div>
+      </a>
+
+      <a class="card" href="projects/homelab-monitoring.html">
+        <span class="status-pill progress">In Progress</span>
+        <h3>Monitoring VM &amp; Ansible</h3>
+        <p>The Debian monitoring VM behind everything above — Prometheus, Grafana, and a planned Ansible playbook to rebuild it reproducibly.</p>
+        <div class="tags"><span class="tag">Ansible</span><span class="tag">Debian</span><span class="tag">VMware</span></div>
+      </a>
+
+      <div class="card" style="opacity:0.55;">
+        <span class="status-pill planned">Planned</span>
+        <h3>10&ndash;12 &middot; Security, VPN &amp; Automation</h3>
+        <p>ACLs/NAT/Firewall, site-to-site VPN, and Ansible-driven network automation.</p>
+        <div class="tags"><span class="tag">ACL</span><span class="tag">VPN</span><span class="tag">Ansible</span></div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<section id="technologies">
+  <div class="wrap">
+    <h2 class="section-title">Technologies</h2>
+    <p class="section-desc">Tools and platforms used across the lab environment.</p>
+    <div class="tech-grid">
+      <div class="tech-group">
+        <h4>Networking</h4>
+        <p>Cisco IOS &middot; OSPF &middot; VLANs &middot; HSRP &middot; STP &middot; LACP EtherChannel &middot; SNMP</p>
+      </div>
+      <div class="tech-group">
+        <h4>Linux</h4>
+        <p>Debian 13 &middot; SSH &middot; systemd &middot; Bash &middot; Kea DHCP</p>
+      </div>
+      <div class="tech-group">
+        <h4>Monitoring &amp; DevOps</h4>
+        <p>Prometheus &middot; Grafana &middot; SNMP Exporter &middot; NetBox &middot; Git &middot; Ansible (planned) &middot; Terraform (planned)</p>
+      </div>
+      <div class="tech-group">
+        <h4>Cloud &amp; Access</h4>
+        <p>DigitalOcean &middot; Cloudflare Tunnel &middot; Nginx &middot; Tailscale</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer class="site-footer">
+  Williams Labs &middot; Infrastructure Lab &middot; Built with HTML &amp; CSS &middot; Served by Nginx
+</footer>
+
+<script src="js/status.js"></script>
+</body>
+</html>

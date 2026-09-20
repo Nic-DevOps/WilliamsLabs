@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Network Services (DHCP) Lab · Williams Labs</title>
+<meta name="description" content="Centralized Kea DHCP with Cisco DHCP relay across all three sites, SSH management on every device, and monitoring extended from HQ-only to the full multi-site network.">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="nav-inner">
+    <a href="../index.html" class="brand"><span class="dot"></span>Williams Labs</a>
+    <nav class="main-nav">
+      <a href="../index.html">Home</a>
+      <a href="../index.html#projects">Projects</a>
+      <a href="../index.html#monitoring">Monitoring</a>
+      <a href="../index.html#technologies">Technologies</a>
+      <a href="https://github.com/Nic-DevOps/WilliamsLabs" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<section style="padding-top:3rem; padding-bottom:0; border-bottom:none;">
+  <div class="wrap">
+    <div class="breadcrumb"><a href="../index.html">Home</a> / <a href="../index.html#projects">Projects</a> / 09 · Network Services</div>
+    <span class="status-pill progress">In Progress</span>
+    <h1 style="font-size:2.1rem; letter-spacing:-0.02em; margin: 0.75rem 0 0;">Network Services (DHCP) Lab</h1>
+    <p style="color:var(--text-dim); font-size:1.05rem; max-width:680px; margin-top:0.75rem;">Deploy a centralized DHCP server at HQ, configure DHCP relay for remote-site VLANs, enable SSH management fleet-wide, and extend Prometheus/Grafana monitoring to Site A and Site B.</p>
+    <div class="meta-row">
+      <span><strong>DHCP server:</strong> Kea DHCPv4, 10.10.50.22</span>
+      <span><strong>Sites monitored:</strong> HQ, Site A, Site B</span>
+      <span><strong>Status:</strong> In Progress</span>
+    </div>
+  </div>
+</section>
+
+<section style="padding-top:0;">
+  <div class="wrap">
+    <div class="prose">
+
+<h2>Overview</h2>
+<p>Building on the OSPF-routed multi-site network from Lab 08, this lab centralizes DHCP at HQ using Kea, relays requests from Site A and Site B over the existing WAN, standardizes SSH management across every switch and router, and extends the monitoring stack from Lab 07 to cover all three sites instead of just HQ.</p>
+
+<h2>SSH management</h2>
+<pre>username admin privilege 15 secret &lt;PASSWORD&gt;
+ip domain-name williamslabs.local
+crypto key generate rsa modulus 2048
+ip ssh version 2
+
+line vty 0 4
+ login local
+ transport input ssh</pre>
+
+<h2>DHCP design</h2>
+<p>The DHCP server sits in the HQ NET-MGMT VLAN on a static IP; each client VLAN receives addresses dynamically via relay.</p>
+<table class="data-table">
+<thead><tr><th>Site</th><th>VLAN</th><th>Network</th><th>Gateway</th></tr></thead>
+<tbody>
+<tr><td>HQ</td><td>10 / 30 / 40</td><td>10.10.x.0/24</td><td>10.10.x.1</td></tr>
+<tr><td>Site A</td><td>10 / 30 / 40</td><td>10.20.x.0/24</td><td>10.20.x.1</td></tr>
+<tr><td>Site B</td><td>10 / 30 / 40</td><td>10.30.x.0/24</td><td>10.30.x.1</td></tr>
+</tbody>
+</table>
+
+<p>Relay is configured on the Layer 3 gateway for each DHCP-enabled VLAN — the HSRP virtual IP where HSRP is in play:</p>
+<pre>interface Vlan10
+ ip helper-address 10.10.50.22</pre>
+
+<h2>Monitoring extended multi-site</h2>
+<p>Prometheus targets are now organized by <code>site</code> label (HQ, Site A, Site B, Hub) so Grafana can filter the dashboard with a site variable instead of one flat device list:</p>
+<pre>- targets: ["10.20.50.1"]
+  labels:
+    site: "Site A"
+    device: "SiteA-CoreSW01"</pre>
+
+<h2>Verification</h2>
+<p>A client on each site pulled an address from the correct VLAN-specific pool (verified against DHCP server leases), and <code>show running-config interface Vlan10</code> confirmed the correct <code>ip helper-address</code> on each gateway.</p>
+
+<h2>What's next</h2>
+<p>Planned: DNS, DHCP high availability, DHCP snooping, and pulling addressing/inventory from NetBox instead of hand-maintained tables.</p>
+
+    </div>
+
+    <div class="project-nav">
+      <a href="08-ospf.html">&larr; 08 · OSPF</a>
+      <a href="netbox.html">NetBox &rarr;</a>
+    </div>
+  </div>
+</section>
+
+<footer class="site-footer">
+  Williams Labs &middot; Infrastructure Lab &middot; Built with HTML &amp; CSS &middot; Served by Nginx
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Multi-Site Static Routing Lab · Williams Labs</title>
+<meta name="description" content="Extended the resilient campus network to HQ, Site A and Site B over routed WAN links through a simulated ISP, using manually configured static routes.">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="nav-inner">
+    <a href="../index.html" class="brand"><span class="dot"></span>Williams Labs</a>
+    <nav class="main-nav">
+      <a href="../index.html">Home</a>
+      <a href="../index.html#projects">Projects</a>
+      <a href="../index.html#monitoring">Monitoring</a>
+      <a href="../index.html#technologies">Technologies</a>
+      <a href="https://github.com/Nic-DevOps/WilliamsLabs" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<section style="padding-top:3rem; padding-bottom:0; border-bottom:none;">
+  <div class="wrap">
+    <div class="breadcrumb"><a href="../index.html">Home</a> / <a href="../index.html#projects">Projects</a> / 06 · Multi-Site Static Routing</div>
+    <span class="status-pill complete">Complete</span>
+    <h1 style="font-size:2.1rem; letter-spacing:-0.02em; margin: 0.75rem 0 0;">Multi-Site Static Routing Lab</h1>
+    <p style="color:var(--text-dim); font-size:1.05rem; max-width:680px; margin-top:0.75rem;">Connect the primary campus to additional branch locations using routed WAN links and static routing, while preserving the existing VLAN, Layer 3 switching, and HSRP infrastructure.</p>
+    <div class="meta-row">
+      <span><strong>Sites:</strong> HQ, Site A, Site B</span>
+      <span><strong>Routing:</strong> Static, via simulated ISP</span>
+      <span><strong>Status:</strong> Complete</span>
+    </div>
+  </div>
+</section>
+
+<section style="padding-top:0;">
+  <div class="wrap">
+    <div class="prose">
+
+<h2>Overview</h2>
+<p>The campus network from Lab 05 becomes HQ in a three-site enterprise. Site A and Site B each get their own core/access switching and a WAN router, and all three sites connect through a simulated ISP router over routed point-to-point links, tied together with manually configured static routes.</p>
+
+<h2>Sites &amp; addressing</h2>
+<table class="data-table">
+<thead><tr><th>Site</th><th>Network</th><th>Purpose</th></tr></thead>
+<tbody>
+<tr><td>HQ</td><td>10.10.0.0/16</td><td>Existing enterprise VLANs (from Lab 05)</td></tr>
+<tr><td>Site A</td><td>10.20.0.0/16</td><td>Site A LAN</td></tr>
+<tr><td>Site B</td><td>10.30.0.0/16</td><td>Site B LAN</td></tr>
+<tr><td>Infrastructure</td><td>10.0.100.0/24</td><td>Point-to-point WAN links</td></tr>
+</tbody>
+</table>
+
+
+<h2>VLANs (replicated per site)</h2>
+<table class="data-table">
+<thead><tr><th>VLAN</th><th>Name</th><th>Purpose</th></tr></thead>
+<tbody>
+<tr><td>10</td><td>USERS</td><td>Client devices</td></tr>
+<tr><td>20</td><td>SERVERS</td><td>Servers and infrastructure services</td></tr>
+<tr><td>30</td><td>RESEARCH</td><td>Research systems</td></tr>
+<tr><td>40</td><td>GUEST</td><td>Guest devices</td></tr>
+<tr><td>50</td><td>NET-MGMT</td><td>Network management (SNMP, monitoring)</td></tr>
+<tr><td>999</td><td>BLACKHOLE</td><td>Unused/native VLAN protection</td></tr>
+</tbody>
+</table>
+
+
+<h2>Topology</h2>
+<p>Each site's core switch connects to its own WAN router over a dedicated /30, and each WAN router connects to the central ISP-Router01 over another /30. Static routes on each internal router point remote-site subnets across the ISP.</p>
+
+<h2>Verification</h2>
+<p>Traceroutes confirmed correct path selection end to end — HQ User PC to Site A Research PC, and Site A Guest PC to Site B Server — with the ISP hop visible in each path.</p>
+
+<h2>Trade-offs</h2>
+<p>Static routes are predictable and easy to reason about, but every remote network has to be manually maintained on every router. That doesn't scale — which is exactly the problem OSPF solves in Lab 08.</p>
+
+<h2>What's next</h2>
+<p>Lab 07 layers SNMP-based monitoring over this multi-site network before Lab 08 replaces the static routes with OSPF.</p>
+
+    </div>
+
+    <div class="project-nav">
+      <a href="05-l3-hsrp.html">&larr; 05 · L3 Switching &amp; HSRP</a>
+      <a href="07-monitoring.html">07 · Monitoring &rarr;</a>
+    </div>
+  </div>
+</section>
+
+<footer class="site-footer">
+  Williams Labs &middot; Infrastructure Lab &middot; Built with HTML &amp; CSS &middot; Served by Nginx
+</footer>
+
+</body>
+</html>

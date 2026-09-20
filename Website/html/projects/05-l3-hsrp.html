@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Layer 3 Switching & HSRP Lab · Williams Labs</title>
+<meta name="description" content="Redundant multilayer core switches with SVIs and HSRP providing highly available default gateways, tested with live failover.">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="nav-inner">
+    <a href="../index.html" class="brand"><span class="dot"></span>Williams Labs</a>
+    <nav class="main-nav">
+      <a href="../index.html">Home</a>
+      <a href="../index.html#projects">Projects</a>
+      <a href="../index.html#monitoring">Monitoring</a>
+      <a href="../index.html#technologies">Technologies</a>
+      <a href="https://github.com/Nic-DevOps/WilliamsLabs" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<section style="padding-top:3rem; padding-bottom:0; border-bottom:none;">
+  <div class="wrap">
+    <div class="breadcrumb"><a href="../index.html">Home</a> / <a href="../index.html#projects">Projects</a> / 05 · L3 Switching &amp; HSRP</div>
+    <span class="status-pill complete">Complete</span>
+    <h1 style="font-size:2.1rem; letter-spacing:-0.02em; margin: 0.75rem 0 0;">Layer 3 Switching & HSRP Lab</h1>
+    <p style="color:var(--text-dim); font-size:1.05rem; max-width:680px; margin-top:0.75rem;">Upgrade the inter-VLAN routing infrastructure into a resilient Layer 3 network capable of maintaining gateway availability during device or path failures.</p>
+    <div class="meta-row">
+      <span><strong>Redundancy:</strong> HSRP active/standby</span>
+      <span><strong>Core:</strong> 2× Cisco 3560 L3</span>
+      <span><strong>Status:</strong> Complete</span>
+    </div>
+  </div>
+</section>
+
+<section style="padding-top:0;">
+  <div class="wrap">
+    <div class="prose">
+
+<h2>Overview</h2>
+<p>Routing moves off the single router and onto two Layer 3 core switches, each holding a Switch Virtual Interface (SVI) per VLAN. HSRP layers a shared virtual gateway IP on top of both SVIs so end devices keep a single, stable default gateway even if one core switch fails.</p>
+
+<h2>Gateway design</h2>
+<table class="data-table">
+<thead><tr><th>VLAN</th><th>Name</th><th>CORE-SW1 SVI</th><th>CORE-SW2 SVI</th><th>HSRP Virtual Gateway</th></tr></thead>
+<tbody>
+<tr><td>10</td><td>SALES</td><td>10.0.10.2</td><td>10.0.10.3</td><td>10.0.10.1</td></tr>
+<tr><td>20</td><td>ENGINEERING</td><td>10.0.20.2</td><td>10.0.20.3</td><td>10.0.20.1</td></tr>
+<tr><td>30</td><td>HR</td><td>10.0.30.2</td><td>10.0.30.3</td><td>10.0.30.1</td></tr>
+<tr><td>40</td><td>MANAGEMENT</td><td>10.0.40.2</td><td>10.0.40.3</td><td>10.0.40.1</td></tr>
+</tbody>
+</table>
+
+
+<h2>Key configuration</h2>
+<p>The core-to-core EtherChannel is converted from a switched trunk into a routed Layer 3 link:</p>
+<pre>interface range g1/0/5-6
+ no switchport
+ channel-group 10 mode active
+
+interface port-channel 10
+ no switchport
+ ip address 10.0.0.1 255.255.255.252</pre>
+<p>HSRP is configured per SVI, with CORE-SW1 as active (higher priority) and CORE-SW2 as standby:</p>
+<pre>interface vlan 10
+ standby 10 ip 10.0.10.1
+ standby 10 priority 110
+ standby 10 preempt</pre>
+
+<h2>Failover test</h2>
+<p>With both core switches showing correct active/standby HSRP roles (<code>show standby brief</code>), the active core's SVI was shut down. The standby core immediately assumed the virtual gateway role, and connectivity to all VLANs remained available throughout.</p>
+
+<h2>What's next</h2>
+<p>Lab 06 extends this resilient campus design to two remote branch sites over routed WAN links.</p>
+
+    </div>
+
+    <div class="project-nav">
+      <a href="04-intervlan-routing.html">&larr; 04 · Inter-VLAN Routing</a>
+      <a href="06-multisite-static.html">06 · Multi-Site Static Routing &rarr;</a>
+    </div>
+  </div>
+</section>
+
+<footer class="site-footer">
+  Williams Labs &middot; Infrastructure Lab &middot; Built with HTML &amp; CSS &middot; Served by Nginx
+</footer>
+
+</body>
+</html>

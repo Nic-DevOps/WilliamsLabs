@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Redundant Switching, STP & EtherChannel Lab · Williams Labs</title>
+<meta name="description" content="Redundant mesh switching topology with STP loop prevention and LACP EtherChannel link aggregation, tested against link and path failures.">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="nav-inner">
+    <a href="../index.html" class="brand"><span class="dot"></span>Williams Labs</a>
+    <nav class="main-nav">
+      <a href="../index.html">Home</a>
+      <a href="../index.html#projects">Projects</a>
+      <a href="../index.html#monitoring">Monitoring</a>
+      <a href="../index.html#technologies">Technologies</a>
+      <a href="https://github.com/Nic-DevOps/WilliamsLabs" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<section style="padding-top:3rem; padding-bottom:0; border-bottom:none;">
+  <div class="wrap">
+    <div class="breadcrumb"><a href="../index.html">Home</a> / <a href="../index.html#projects">Projects</a> / 02 · Redundant Switching</div>
+    <span class="status-pill complete">Complete</span>
+    <h1 style="font-size:2.1rem; letter-spacing:-0.02em; margin: 0.75rem 0 0;">Redundant Switching, STP & EtherChannel Lab</h1>
+    <p style="color:var(--text-dim); font-size:1.05rem; max-width:680px; margin-top:0.75rem;">Upgrade the office network with redundant switching infrastructure to eliminate single points of failure and provide multiple paths between devices.</p>
+    <div class="meta-row">
+      <span><strong>Devices:</strong> 3 core, 3 access switches</span>
+      <span><strong>Protocols:</strong> Rapid PVST+, LACP</span>
+      <span><strong>Status:</strong> Complete</span>
+    </div>
+  </div>
+</section>
+
+<section style="padding-top:0;">
+  <div class="wrap">
+    <div class="prose">
+
+<h2>Overview</h2>
+<p>A redundant mesh topology replaces the single-path design from Lab 01. Three Layer 3-capable Catalyst 3650 core switches and three Catalyst 2960 access switches are cross-connected, with Spanning Tree Protocol preventing Layer 2 loops and LACP EtherChannel bundling redundant physical links into single logical connections.</p>
+
+<h2>Devices</h2>
+<table class="data-table">
+<thead><tr><th>Device</th><th>Model</th><th>Purpose</th></tr></thead>
+<tbody>
+<tr><td>Core1</td><td>Cisco 3650 L3 Switch</td><td>Primary Root Bridge</td></tr>
+<tr><td>Core2</td><td>Cisco 3650 L3 Switch</td><td>Secondary Root Bridge</td></tr>
+<tr><td>Core3</td><td>Cisco 3650 L3 Switch</td><td>Redundant core switch</td></tr>
+<tr><td>Access1–3</td><td>Cisco 2960</td><td>Access layer</td></tr>
+</tbody>
+</table>
+
+
+<h2>Spanning Tree Protocol</h2>
+<p>Rapid PVST+ selects the lowest-cost path to the root bridge and blocks redundant links to prevent loops. Core1 is configured as the primary root bridge:</p>
+<pre>spanning-tree vlan 1 root primary</pre>
+
+<h2>EtherChannel (LACP)</h2>
+<p>Physical links between core switches are bundled into logical port channels so STP treats them as one connection — keeping every member link active instead of blocking the redundant ones.</p>
+<table class="data-table">
+<thead><tr><th>Port Channel</th><th>Connection</th><th>Protocol</th><th>Purpose</th></tr></thead>
+<tbody>
+<tr><td>Po1</td><td>CORE1 ↔ CORE2</td><td>LACP</td><td>Redundant core link</td></tr>
+<tr><td>Po2</td><td>CORE1 ↔ CORE3</td><td>LACP</td><td>Redundant core link</td></tr>
+<tr><td>Po2</td><td>CORE2 ↔ CORE3</td><td>LACP</td><td>Redundant core link</td></tr>
+</tbody>
+</table>
+
+<pre>interface range gigabitEthernet0/1-2
+ switchport mode trunk
+ channel-group 1 mode active</pre>
+
+<h2>Failover testing</h2>
+<p><strong>EtherChannel link failure:</strong> disabling one physical member interface left the Port Channel operational with no STP recalculation — traffic simply shifted to the remaining link.</p>
+<p><strong>STP path failure:</strong> disconnecting an active Layer 2 link triggered STP to transition a previously blocked path to forwarding, restoring connectivity automatically.</p>
+
+<h2>What's next</h2>
+<p>Lab 03 introduces VLANs to logically segment the now-redundant switching fabric by department.</p>
+
+    </div>
+
+    <div class="project-nav">
+      <a href="01-basic-routing.html">&larr; 01 · Basic Routing</a>
+      <a href="03-vlan-trunking.html">03 · VLAN Trunking &rarr;</a>
+    </div>
+  </div>
+</section>
+
+<footer class="site-footer">
+  Williams Labs &middot; Infrastructure Lab &middot; Built with HTML &amp; CSS &middot; Served by Nginx
+</footer>
+
+</body>
+</html>

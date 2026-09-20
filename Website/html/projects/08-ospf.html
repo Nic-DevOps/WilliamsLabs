@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OSPF Dynamic Routing Lab · Williams Labs</title>
+<meta name="description" content="Replaced manually configured static routes with single-area OSPF across HQ, Site A and Site B, with tested automatic convergence after a link failure.">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="nav-inner">
+    <a href="../index.html" class="brand"><span class="dot"></span>Williams Labs</a>
+    <nav class="main-nav">
+      <a href="../index.html">Home</a>
+      <a href="../index.html#projects">Projects</a>
+      <a href="../index.html#monitoring">Monitoring</a>
+      <a href="../index.html#technologies">Technologies</a>
+      <a href="https://github.com/Nic-DevOps/WilliamsLabs" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<section style="padding-top:3rem; padding-bottom:0; border-bottom:none;">
+  <div class="wrap">
+    <div class="breadcrumb"><a href="../index.html">Home</a> / <a href="../index.html#projects">Projects</a> / 08 · OSPF</div>
+    <span class="status-pill complete">Complete</span>
+    <h1 style="font-size:2.1rem; letter-spacing:-0.02em; margin: 0.75rem 0 0;">OSPF Dynamic Routing Lab</h1>
+    <p style="color:var(--text-dim); font-size:1.05rem; max-width:680px; margin-top:0.75rem;">Replace static routing with OSPF across the multi-site network, establish neighbor relationships, and verify automatic route convergence after a link failure.</p>
+    <div class="meta-row">
+      <span><strong>Area:</strong> Area 0 (single-area)</span>
+      <span><strong>Process:</strong> OSPF process 1, all routers</span>
+      <span><strong>Status:</strong> Complete</span>
+    </div>
+  </div>
+</section>
+
+<section style="padding-top:0;">
+  <div class="wrap">
+    <div class="prose">
+
+<h2>Overview</h2>
+<p>Same three-site topology as Lab 06, but the manually maintained static routes are removed from every internal device and replaced with single-area OSPF, using loopback-based router IDs for stable, predictable adjacencies.</p>
+
+<h2>Router ID / loopback scheme</h2>
+<table class="data-table">
+<thead><tr><th>Range</th><th>Assigned to</th></tr></thead>
+<tbody>
+<tr><td>10.255.0.x</td><td>ISP / hub devices</td></tr>
+<tr><td>10.255.1.x</td><td>HQ routers &amp; core switches</td></tr>
+<tr><td>10.255.2.x</td><td>Site A routers &amp; core switches</td></tr>
+<tr><td>10.255.3.x</td><td>Site B routers &amp; core switches</td></tr>
+</tbody>
+</table>
+
+
+<h2>Configuration</h2>
+<pre>interface Loopback0
+ ip address 10.255.1.1 255.255.255.255
+
+router ospf 1
+ router-id 10.255.1.1
+ passive-interface default
+ no passive-interface &lt;WAN-interface&gt;
+ network 10.10.0.0 0.0.255.255 area 0
+ network 10.0.100.0 0.0.0.3 area 0
+ network 10.255.1.1 0.0.0.0 area 0</pre>
+<p>All interfaces are passive by default, with the WAN-facing interface explicitly opened so OSPF only forms neighbor relationships across router-to-router links — never toward end devices.</p>
+
+<h2>Verification</h2>
+<ul>
+<li><code>show ip ospf neighbor</code> — neighbors reach FULL state</li>
+<li><code>show ip route ospf</code> — remote-site networks now show as OSPF-learned, not static</li>
+<li>Inter-site pings confirmed connectivity without any manually configured routes</li>
+</ul>
+
+
+<h2>Security considerations noted</h2>
+<table class="data-table">
+<thead><tr><th>Risk</th><th>Description</th><th>Future mitigation</th></tr></thead>
+<tbody>
+<tr><td>Rogue adjacencies</td><td>Unauthorized devices join the OSPF domain and inject false routes</td><td>OSPF authentication (MD5/SHA)</td></tr>
+<tr><td>Topology disclosure</td><td>Unencrypted routing updates reveal internal topology</td><td>Area encryption, control-plane hardening</td></tr>
+<tr><td>DoS via Hello flooding</td><td>Excess Hello traffic overwhelms the routing process</td><td>Passive interfaces, prefix filtering</td></tr>
+</tbody>
+</table>
+
+
+<h2>What's next</h2>
+<p>Lab 09 builds network services (DHCP, SSH management) on top of this dynamically routed foundation and extends monitoring to all three sites.</p>
+
+    </div>
+
+    <div class="project-nav">
+      <a href="07-monitoring.html">&larr; 07 · Monitoring</a>
+      <a href="09-network-services.html">09 · Network Services &rarr;</a>
+    </div>
+  </div>
+</section>
+
+<footer class="site-footer">
+  Williams Labs &middot; Infrastructure Lab &middot; Built with HTML &amp; CSS &middot; Served by Nginx
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NetBox — Infrastructure Source of Truth · Williams Labs</title>
+<meta name="description" content="NetBox 4.6.8 on Debian 13, standing up DCIM/IPAM as the infrastructure source of truth that will eventually feed Terraform, Ansible, and the monitoring stack.">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="nav-inner">
+    <a href="../index.html" class="brand"><span class="dot"></span>Williams Labs</a>
+    <nav class="main-nav">
+      <a href="../index.html">Home</a>
+      <a href="../index.html#projects">Projects</a>
+      <a href="../index.html#monitoring">Monitoring</a>
+      <a href="../index.html#technologies">Technologies</a>
+      <a href="https://github.com/Nic-DevOps/WilliamsLabs" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<section style="padding-top:3rem; padding-bottom:0; border-bottom:none;">
+  <div class="wrap">
+    <div class="breadcrumb"><a href="../index.html">Home</a> / <a href="../index.html#projects">Projects</a> / NetBox</div>
+    <span class="status-pill progress">In Progress</span>
+    <h1 style="font-size:2.1rem; letter-spacing:-0.02em; margin: 0.75rem 0 0;">NetBox — Infrastructure Source of Truth</h1>
+    <p style="color:var(--text-dim); font-size:1.05rem; max-width:680px; margin-top:0.75rem;">Install and configure NetBox as the source of truth for device inventory and IP address management, feeding future Terraform/Ansible automation and the Prometheus/Grafana monitoring stack.</p>
+    <div class="meta-row">
+      <span><strong>Host:</strong> netbox01, Debian 13.6</span>
+      <span><strong>Stack:</strong> Python 3.13.5 · PostgreSQL 17 · Redis 8.0.2</span>
+      <span><strong>Status:</strong> In Progress</span>
+    </div>
+  </div>
+</section>
+
+<section style="padding-top:0;">
+  <div class="wrap">
+    <div class="prose">
+
+<h2>Overview</h2>
+<p>A separate Debian VM (hostname <code>netbox01</code>) runs NetBox 4.6.8 as the planned infrastructure source of truth — device inventory (DCIM), IP address management (IPAM), and eventually virtualization tracking. The goal is for NetBox to feed both the Terraform/Ansible provisioning pipeline and device discovery for the Prometheus monitoring stack, rather than maintaining device lists by hand in multiple places.</p>
+
+<h2>Stack</h2>
+<table class="data-table">
+<thead><tr><th>Component</th><th>Version</th></tr></thead>
+<tbody>
+<tr><td>NetBox</td><td>4.6.8</td></tr>
+<tr><td>Python</td><td>3.13.5</td></tr>
+<tr><td>PostgreSQL</td><td>17</td></tr>
+<tr><td>Redis</td><td>8.0.2</td></tr>
+</tbody>
+</table>
+
+
+<h2>Status</h2>
+<p>The install is fully working end to end: database migrations completed, a superuser created, static files collected, and web login tested successfully against Django's development server.</p>
+
+<h2>Next stage</h2>
+<p>Move off the Django dev server onto a production deployment — Gunicorn behind Nginx, managed as a systemd service — then begin populating DCIM/IPAM data and wiring NetBox into device discovery for Grafana and Prometheus, deliberately kept out of the initial Lab 07/09 monitoring setup so that piece could be built and proven independently first.</p>
+
+    </div>
+
+    <div class="project-nav">
+      <a href="09-network-services.html">&larr; 09 · Network Services</a>
+      <a href="homelab-monitoring.html">Monitoring VM &rarr;</a>
+    </div>
+  </div>
+</section>
+
+<footer class="site-footer">
+  Williams Labs &middot; Infrastructure Lab &middot; Built with HTML &amp; CSS &middot; Served by Nginx
+</footer>
+
+</body>
+</html>

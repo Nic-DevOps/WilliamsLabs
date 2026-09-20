@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Monitoring VM & Ansible Automation · Williams Labs</title>
+<meta name="description" content="The Debian 13 VM behind the monitoring stack in Lab 07/09 — how it's built, how it connects to CML, and the plan to turn its setup into a reproducible Ansible playbook.">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="nav-inner">
+    <a href="../index.html" class="brand"><span class="dot"></span>Williams Labs</a>
+    <nav class="main-nav">
+      <a href="../index.html">Home</a>
+      <a href="../index.html#projects">Projects</a>
+      <a href="../index.html#monitoring">Monitoring</a>
+      <a href="../index.html#technologies">Technologies</a>
+      <a href="https://github.com/Nic-DevOps/WilliamsLabs" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<section style="padding-top:3rem; padding-bottom:0; border-bottom:none;">
+  <div class="wrap">
+    <div class="breadcrumb"><a href="../index.html">Home</a> / <a href="../index.html#projects">Projects</a> / Monitoring VM</div>
+    <span class="status-pill progress">In Progress</span>
+    <h1 style="font-size:2.1rem; letter-spacing:-0.02em; margin: 0.75rem 0 0;">Monitoring VM & Ansible Automation</h1>
+    <p style="color:var(--text-dim); font-size:1.05rem; max-width:680px; margin-top:0.75rem;">Stand up a general-purpose Debian 13 VM to run Prometheus/Grafana and connect it to Cisco Modeling Labs (CML), then convert the build into an Ansible playbook so it can be destroyed and recreated reproducibly.</p>
+    <div class="meta-row">
+      <span><strong>Host:</strong> Debian 13 (trixie), VMware Workstation</span>
+      <span><strong>Network:</strong> VMnet10 host-only, 192.168.100.0/24</span>
+      <span><strong>Status:</strong> In Progress</span>
+    </div>
+  </div>
+</section>
+
+<section style="padding-top:0;">
+  <div class="wrap">
+    <div class="prose">
+
+<h2>Overview</h2>
+<p>Every lab from 07 onward depends on this VM. It runs in VMware Workstation alongside a separate Cisco Modeling Labs (CML) VM, and is currently treated as general-purpose — later split into dedicated monitoring vs. provisioning VMs as the environment grows.</p>
+
+<h2>Build order</h2>
+<ul>
+<li>SSH</li>
+<li>networking</li>
+<li>sudo</li>
+<li>git</li>
+<li>python</li>
+<li>ansible</li>
+<li>terraform</li>
+<li>docker</li>
+<li>prometheus</li>
+<li>grafana</li>
+</ul>
+
+<p>Monitoring (Prometheus/Grafana) was prioritized ahead of automation tooling (Ansible/Terraform) so the lab had visibility into itself as early as possible.</p>
+
+<h2>CML connectivity</h2>
+<p>The CML controller runs two NICs: <code>ens160</code> on NAT/bridge0 for management, and <code>ens32</code> on a custom bridge mapped to the host-only <code>VMnet10</code> (192.168.100.0/24). Getting the monitoring VM talking to CML lab nodes required rebuilding CML's <code>bridge1</code> in the System Administration Cockpit — disabling IPv4/IPv6 on the bridge before adding <code>ens32</code> as a member port, then pointing CML's External Connector at <code>bridge1</code>.</p>
+<table class="data-table">
+<thead><tr><th>Host</th><th>IP</th></tr></thead>
+<tbody>
+<tr><td>Monitoring VM</td><td>192.168.100.20</td></tr>
+<tr><td>CML lab node (static)</td><td>192.168.100.21/24</td></tr>
+</tbody>
+</table>
+
+
+<h2>Running services</h2>
+<table class="data-table">
+<thead><tr><th>Service</th><th>Version</th><th>Port</th></tr></thead>
+<tbody>
+<tr><td>Prometheus</td><td>3.13.2</td><td>9090</td></tr>
+<tr><td>Grafana</td><td>13.1.1</td><td>3000</td></tr>
+<tr><td>SNMP Exporter</td><td>—</td><td>9116</td></tr>
+</tbody>
+</table>
+
+<p>All three run as systemd services (<code>prometheus.service</code>, <code>grafana-server.service</code>, <code>snmp_exporter.service</code>), enabled to start on boot.</p>
+
+<h2>Toward reproducibility</h2>
+<p>The plan is to capture this build — packages, users, systemd units, configs — as an Ansible playbook, so the VM becomes disposable rather than hand-maintained: destroy it, rerun the playbook, get an identical monitoring host back. A second VM is planned to run Terraform + Ansible for provisioning lightweight Linux/Windows systems that also tie into CML, separating "watches the lab" from "builds the lab."</p>
+
+    </div>
+
+    <div class="project-nav">
+      <a href="netbox.html">&larr; NetBox</a>
+      <a href="../index.html#projects">All Projects &rarr;</a>
+    </div>
+  </div>
+</section>
+
+<footer class="site-footer">
+  Williams Labs &middot; Infrastructure Lab &middot; Built with HTML &amp; CSS &middot; Served by Nginx
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inter-VLAN Routing Lab · Williams Labs</title>
+<meta name="description" content="Router-on-a-stick design providing Layer 3 routing between VLANs via subinterfaces, layered on top of the redundant, segmented switching fabric.">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="nav-inner">
+    <a href="../index.html" class="brand"><span class="dot"></span>Williams Labs</a>
+    <nav class="main-nav">
+      <a href="../index.html">Home</a>
+      <a href="../index.html#projects">Projects</a>
+      <a href="../index.html#monitoring">Monitoring</a>
+      <a href="../index.html#technologies">Technologies</a>
+      <a href="https://github.com/Nic-DevOps/WilliamsLabs" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<section style="padding-top:3rem; padding-bottom:0; border-bottom:none;">
+  <div class="wrap">
+    <div class="breadcrumb"><a href="../index.html">Home</a> / <a href="../index.html#projects">Projects</a> / 04 · Inter-VLAN Routing</div>
+    <span class="status-pill complete">Complete</span>
+    <h1 style="font-size:2.1rem; letter-spacing:-0.02em; margin: 0.75rem 0 0;">Inter-VLAN Routing Lab</h1>
+    <p style="color:var(--text-dim); font-size:1.05rem; max-width:680px; margin-top:0.75rem;">Introduce Layer 3 routing between the VLANs created in the previous lab using a router-on-a-stick design.</p>
+    <div class="meta-row">
+      <span><strong>Design:</strong> Router-on-a-stick</span>
+      <span><strong>Router:</strong> Cisco ISR 4331</span>
+      <span><strong>Status:</strong> Complete</span>
+    </div>
+  </div>
+</section>
+
+<section style="padding-top:0;">
+  <div class="wrap">
+    <div class="prose">
+
+<h2>Overview</h2>
+<p>A single router interface, trunked to the core switching layer over 802.1Q, provides gateways for all four VLANs via subinterfaces — one per VLAN. This keeps routing centralized and simple, at the cost of scalability: every inter-VLAN packet passes through one physical link.</p>
+
+<h2>VLAN &amp; gateway design</h2>
+<table class="data-table">
+<thead><tr><th>VLAN</th><th>Name</th><th>Network</th><th>Router Subinterface</th><th>Gateway</th></tr></thead>
+<tbody>
+<tr><td>10</td><td>SALES</td><td>10.0.10.0/24</td><td>G0/0.10</td><td>10.0.10.1</td></tr>
+<tr><td>20</td><td>ENGINEERING</td><td>10.0.20.0/24</td><td>G0/0.20</td><td>10.0.20.1</td></tr>
+<tr><td>30</td><td>HR</td><td>10.0.30.0/24</td><td>G0/0.30</td><td>10.0.30.1</td></tr>
+<tr><td>40</td><td>MANAGEMENT</td><td>10.0.40.0/24</td><td>G0/0.40</td><td>10.0.40.1</td></tr>
+<tr><td>999</td><td>UNUSED</td><td>N/A</td><td>—</td><td>unused native VLAN, trunk security</td></tr>
+</tbody>
+</table>
+
+
+<h2>Router-on-a-stick configuration</h2>
+<pre>interface g0/0
+ no shutdown
+
+interface g0/0.10
+ encapsulation dot1q 10
+ ip address 10.0.10.1 255.255.255.0
+
+interface g0/0.20
+ encapsulation dot1q 20
+ ip address 10.0.20.1 255.255.255.0
+! (repeated for VLANs 30 and 40)</pre>
+
+<h2>Verification</h2>
+<p>Three connectivity tests confirmed the design worked end to end: same-VLAN PC-to-PC, PC-to-gateway, and full inter-VLAN routing (HR PC to Engineering PC).</p>
+
+<h2>Trade-offs</h2>
+<p>Simple to configure and troubleshoot, but the router becomes a single point of failure for all inter-VLAN traffic, and there's no Layer 3 redundancy — the problem HSRP solves next.</p>
+
+<h2>What's next</h2>
+<p>Lab 05 moves routing onto redundant Layer 3 switches with HSRP for gateway high availability.</p>
+
+    </div>
+
+    <div class="project-nav">
+      <a href="03-vlan-trunking.html">&larr; 03 · VLAN Trunking</a>
+      <a href="05-l3-hsrp.html">05 · L3 Switching &amp; HSRP &rarr;</a>
+    </div>
+  </div>
+</section>
+
+<footer class="site-footer">
+  Williams Labs &middot; Infrastructure Lab &middot; Built with HTML &amp; CSS &middot; Served by Nginx
+</footer>
+
+</body>
+</html>

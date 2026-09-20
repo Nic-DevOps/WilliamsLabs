@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VLAN Trunking Lab · Williams Labs</title>
+<meta name="description" content="Logical segmentation into four department VLANs, extended across switches over 802.1Q trunk links with PortFast and BPDU Guard on access ports.">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="nav-inner">
+    <a href="../index.html" class="brand"><span class="dot"></span>Williams Labs</a>
+    <nav class="main-nav">
+      <a href="../index.html">Home</a>
+      <a href="../index.html#projects">Projects</a>
+      <a href="../index.html#monitoring">Monitoring</a>
+      <a href="../index.html#technologies">Technologies</a>
+      <a href="https://github.com/Nic-DevOps/WilliamsLabs" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<section style="padding-top:3rem; padding-bottom:0; border-bottom:none;">
+  <div class="wrap">
+    <div class="breadcrumb"><a href="../index.html">Home</a> / <a href="../index.html#projects">Projects</a> / 03 · VLAN Trunking</div>
+    <span class="status-pill complete">Complete</span>
+    <h1 style="font-size:2.1rem; letter-spacing:-0.02em; margin: 0.75rem 0 0;">VLAN Trunking Lab</h1>
+    <p style="color:var(--text-dim); font-size:1.05rem; max-width:680px; margin-top:0.75rem;">Introduce logical network segmentation with VLANs and extend those VLANs across switch-to-switch trunk links, while preserving the redundant switching infrastructure.</p>
+    <div class="meta-row">
+      <span><strong>VLANs:</strong> 4 department VLANs + native</span>
+      <span><strong>Trunking:</strong> 802.1Q</span>
+      <span><strong>Status:</strong> Complete</span>
+    </div>
+  </div>
+</section>
+
+<section style="padding-top:0;">
+  <div class="wrap">
+    <div class="prose">
+
+<h2>Overview</h2>
+<p>VLANs logically divide the switching fabric into independent broadcast domains — without them, every port sits in VLAN 1 and broadcast traffic (like ARP) floods the entire network. This lab creates four department VLANs and extends them across two core and four access switches over 802.1Q trunks.</p>
+
+<h2>VLAN design</h2>
+<table class="data-table">
+<thead><tr><th>VLAN</th><th>Name</th><th>Purpose</th></tr></thead>
+<tbody>
+<tr><td>10</td><td>SALES</td><td>Sales department users</td></tr>
+<tr><td>20</td><td>ENGINEERING</td><td>Engineering department users</td></tr>
+<tr><td>30</td><td>HR</td><td>Human Resources users</td></tr>
+<tr><td>40</td><td>MANAGER</td><td>Manager and executive users</td></tr>
+</tbody>
+</table>
+
+<p>No default gateways are configured in this lab — that's Layer 3, introduced in Lab 04.</p>
+
+<h2>Configuration order</h2>
+<ul>
+<li>Enable Rapid PVST+ (<code>spanning-tree mode rapid-pvst</code>)</li>
+<li>Create VLANs 10/20/30/40 on each switch</li>
+<li>Configure switch-to-switch links as 802.1Q trunks</li>
+<li>Bundle trunk links into LACP EtherChannels</li>
+<li>Assign access ports to VLANs</li>
+<li>Set CORE1 as STP root primary, CORE2 as secondary</li>
+<li>Enable PortFast + BPDU Guard on access ports</li>
+</ul>
+
+<pre>interface range fa0/1-8
+ switchport mode access
+ spanning-tree portfast
+ spanning-tree bpduguard enable</pre>
+
+<h2>Verification</h2>
+<p>PCs in the same VLAN could reach each other even when connected to different access switches — confirming VLANs propagate correctly across trunks. PCs in different VLANs could not reach each other at all, confirming Layer 2 isolation is working as intended.</p>
+
+<h2>What's next</h2>
+<p>Lab 04 adds a router to provide controlled communication between these now-isolated VLANs.</p>
+
+    </div>
+
+    <div class="project-nav">
+      <a href="02-redundant-switching.html">&larr; 02 · Redundant Switching</a>
+      <a href="04-intervlan-routing.html">04 · Inter-VLAN Routing &rarr;</a>
+    </div>
+  </div>
+</section>
+
+<footer class="site-footer">
+  Williams Labs &middot; Infrastructure Lab &middot; Built with HTML &amp; CSS &middot; Served by Nginx
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Basic Routing Lab · Williams Labs</title>
+<meta name="description" content="A four-LAN office network with a single router providing inter-VLAN connectivity and default gateways for each subnet.">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="nav-inner">
+    <a href="../index.html" class="brand"><span class="dot"></span>Williams Labs</a>
+    <nav class="main-nav">
+      <a href="../index.html">Home</a>
+      <a href="../index.html#projects">Projects</a>
+      <a href="../index.html#monitoring">Monitoring</a>
+      <a href="../index.html#technologies">Technologies</a>
+      <a href="https://github.com/Nic-DevOps/WilliamsLabs" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<section style="padding-top:3rem; padding-bottom:0; border-bottom:none;">
+  <div class="wrap">
+    <div class="breadcrumb"><a href="../index.html">Home</a> / <a href="../index.html#projects">Projects</a> / 01 · Basic Routing</div>
+    <span class="status-pill complete">Complete</span>
+    <h1 style="font-size:2.1rem; letter-spacing:-0.02em; margin: 0.75rem 0 0;">Basic Routing Lab</h1>
+    <p style="color:var(--text-dim); font-size:1.05rem; max-width:680px; margin-top:0.75rem;">Build the initial network infrastructure for a small office and establish basic connectivity between four separate network segments.</p>
+    <div class="meta-row">
+      <span><strong>Devices:</strong> 1 router, 4 switches, 16 PCs</span>
+      <span><strong>Focus:</strong> Static connectivity, subnetting</span>
+      <span><strong>Status:</strong> Complete</span>
+    </div>
+  </div>
+</section>
+
+<section style="padding-top:0;">
+  <div class="wrap">
+    <div class="prose">
+
+<h2>Overview</h2>
+<p>The starting point for the whole lab environment: four separate LANs, each on its own subnet, connected through a single Cisco ISR 4331 router acting as the default gateway for every segment. Each LAN uses a star topology — end devices connect to a Layer 2 Catalyst 2960 switch, and each switch uplinks to the router.</p>
+<p>No routing protocol is needed here — all four networks are directly connected, so the router automatically populates its table with connected routes as each interface comes up.</p>
+
+<h2>Devices</h2>
+<table class="data-table">
+<thead><tr><th>Qty</th><th>Device</th><th>Model</th><th>Purpose</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>Router</td><td>Cisco ISR 4331</td><td>Layer 3 routing between LAN A–D, default gateway for each subnet</td></tr>
+<tr><td>4</td><td>Switches</td><td>Cisco Catalyst 2960</td><td>Layer 2 connectivity for each LAN</td></tr>
+<tr><td>16</td><td>PCs</td><td>Generic end devices</td><td>Validate connectivity</td></tr>
+</tbody>
+</table>
+
+
+<h2>IP Addressing</h2>
+<table class="data-table">
+<thead><tr><th>LAN</th><th>Network</th><th>Subnet Mask</th><th>Default Gateway</th></tr></thead>
+<tbody>
+<tr><td>LAN A</td><td>10.0.10.0/24</td><td>255.255.255.0</td><td>10.0.10.1</td></tr>
+<tr><td>LAN B</td><td>10.0.20.0/24</td><td>255.255.255.0</td><td>10.0.20.1</td></tr>
+<tr><td>LAN C</td><td>10.0.30.0/24</td><td>255.255.255.0</td><td>10.0.30.1</td></tr>
+<tr><td>LAN D</td><td>10.0.40.0/24</td><td>255.255.255.0</td><td>10.0.40.1</td></tr>
+</tbody>
+</table>
+
+
+<h2>Design trade-offs</h2>
+<p><strong>Advantages:</strong> each LAN is its own broadcast domain, and the design is simple to configure and troubleshoot.</p>
+<p><strong>Limitations:</strong> the router is a single point of failure for inter-LAN traffic, and each switch is a single point of failure for its own LAN — the problem the next lab exists to solve.</p>
+
+<h2>What's next</h2>
+<p>Lab 02 adds redundant switch links, STP, and EtherChannel to remove the single points of failure introduced here.</p>
+
+    </div>
+
+    <div class="project-nav">
+      <a href="../index.html#projects">&larr; All Projects</a>
+      <a href="02-redundant-switching.html">02 · Redundant Switching &rarr;</a>
+    </div>
+  </div>
+</section>
+
+<footer class="site-footer">
+  Williams Labs &middot; Infrastructure Lab &middot; Built with HTML &amp; CSS &middot; Served by Nginx
+</footer>
+
+</body>
+</html>
