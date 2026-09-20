@@ -455,13 +455,13 @@ scrape_configs:
 ## Grafana configuration
 The up metric is used to display device availability.
 
-![alt text](../.assets/09-Network-Services/image-13.png)
+![alt text](../assets/09-Network-Services/image-13.png)
 
 The Table visualization with a Organize fields by name Transformation is used to order the visual. 
 
-![alt text](../.assets/09-Network-Services/image-2.png)
-![alt text](../.assets/09-Network-Services/image-11.png)
-![alt text](../.assets/09-Network-Services/image-12.png)
+![alt text](../assets/09-Network-Services/image-2.png)
+![alt text](../assets/09-Network-Services/image-11.png)
+![alt text](../assets/09-Network-Services/image-12.png)
 
 
 # 9. Verification and Testing
@@ -480,27 +480,27 @@ Site B | 10.30.10.0/24
 
 ## HQ: 
 
-![alt text](../.assets/09-Network-Services/image-6.png)
+![alt text](../assets/09-Network-Services/image-6.png)
 
-![alt text](../.assets/09-Network-Services/image-5.png)
+![alt text](../assets/09-Network-Services/image-5.png)
 
 ## Site A:
 
-![alt text](../.assets/09-Network-Services/image-7.png)
+![alt text](../assets/09-Network-Services/image-7.png)
 
-![alt text](../.assets/09-Network-Services/image-8.png)
+![alt text](../assets/09-Network-Services/image-8.png)
 
 ## Site B:
 
 
-![alt text](../.assets/09-Network-Services/image-4.png)
+![alt text](../assets/09-Network-Services/image-4.png)
 
-![alt text](../.assets/09-Network-Services/image-9.png)
+![alt text](../assets/09-Network-Services/image-9.png)
 
 
 ## DHCP Server Leases
 
-![alt text](../.assets/09-Network-Services/image-10.png)
+![alt text](../assets/09-Network-Services/image-10.png)
 
 
 ## Verify DHCP Relay
@@ -510,7 +510,7 @@ show running-config interface Vlan10
 Confirm that the correct ip helper-address is configured.
 
 
-![alt text](../.assets/09-Network-Services/image-3.png)
+![alt text](../assets/09-Network-Services/image-3.png)
 
 
 # 11. Summary and Future Improvements

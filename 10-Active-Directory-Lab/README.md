@@ -8,8 +8,8 @@ TODO: Describe the goals of this lab (e.g., standing up a Windows Server domain 
 
 TODO: Add topology diagram/description.
 
-<!-- Images live in the shared assets folder: ../.assets/10-Active-Directory-Lab/
-     Example: ![Topology Diagram](../.assets/10-Active-Directory-Lab/topology.png) -->
+<!-- Images live in the shared assets folder: ../assets/10-Active-Directory-Lab/
+     Example: ![Topology Diagram](../assets/10-Active-Directory-Lab/topology.png) -->
 
 ## Objectives
 
