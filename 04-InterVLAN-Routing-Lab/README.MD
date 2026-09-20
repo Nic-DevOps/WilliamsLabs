@@ -45,7 +45,7 @@ This topology uses a router-on-a-stick design for inter-VLAN routing. The access
 
 # 3. Physical Layout
 
-![alt text](image-9.png)
+![alt text](../assets/04-InterVLAN-Routing-Lab/image-9.png)
 
 ## Devices
 
@@ -136,7 +136,7 @@ The following order was used to configure VLANs, trunking, EtherChannels, and ST
    ```
    show vlan brief
    ```
-![alt text](image.png)
+![alt text](../assets/04-InterVLAN-Routing-Lab/image.png)
 
 
    ## 3. Configure Access Ports
@@ -156,7 +156,7 @@ The following order was used to configure VLANs, trunking, EtherChannels, and ST
    ```
    show interfaces status
    ```
- ![alt text](image-2.png)
+ ![alt text](../assets/04-InterVLAN-Routing-Lab/image-2.png)
 
    ## 4. Configure EtherChannels
    ```
@@ -176,9 +176,9 @@ The following order was used to configure VLANs, trunking, EtherChannels, and ST
    show etherchannel summary
    show interfaces trunk
    ```
-   ![alt text](image-3.png) 
-   ![alt text](image-5.png)
-   ![alt text](image-4.png)
+   ![alt text](../assets/04-InterVLAN-Routing-Lab/image-3.png) 
+   ![alt text](../assets/04-InterVLAN-Routing-Lab/image-5.png)
+   ![alt text](../assets/04-InterVLAN-Routing-Lab/image-4.png)
   
 
           
@@ -203,7 +203,7 @@ The following order was used to configure VLANs, trunking, EtherChannels, and ST
    show spanning-tree
    ```
    Core SW1:  
-   ![alt text](image-10.png)
+   ![alt text](../assets/04-InterVLAN-Routing-Lab/image-10.png)
 
    ## 6. Configure Router-on-a-Stick
    ```
@@ -234,14 +234,14 @@ The following order was used to configure VLANs, trunking, EtherChannels, and ST
    show ip interface brief
    ```
 
-   ![alt text](image-7.png)
+   ![alt text](../assets/04-InterVLAN-Routing-Lab/image-7.png)
 
 
 
    ## 7. Configure Static IP address on PC
 
 
-   ![alt text](image-8.png)
+   ![alt text](../assets/04-InterVLAN-Routing-Lab/image-8.png)
           
    ## 6. Verify configuration and save changes
    
@@ -251,19 +251,19 @@ The following order was used to configure VLANs, trunking, EtherChannels, and ST
    ### Same VLAN
    Sales PC → Sales PC
 
-   ![alt text](https://github.com/Nic-DevOps/Networking/blob/main/04-InterVLAN-Routing-Lab/Inter%20Vlan%20ping%20test.gif)
+   ![alt text](../assets/04-InterVLAN-Routing-Lab/Inter%20Vlan%20ping%20test.gif)
 
 
   ### VLAN Gateway
    Tests router connection.
    Sales PC → VLAN 10 Gateway
 
-   ![alt text](https://github.com/Nic-DevOps/Networking/blob/main/04-InterVLAN-Routing-Lab/Gateway%20ping%20test.gif)
+   ![alt text](../assets/04-InterVLAN-Routing-Lab/Gateway%20ping%20test.gif)
 
 
    ### Inter-VLAN Routing
    HR PC → Engineering PC
-   ![alt text](https://github.com/Nic-DevOps/Networking/blob/main/04-InterVLAN-Routing-Lab/Intra%20Vlan%20ping%20test.gif)
+   ![alt text](../assets/04-InterVLAN-Routing-Lab/Intra%20Vlan%20ping%20test.gif)
 
 
 # 7. Future Improvements

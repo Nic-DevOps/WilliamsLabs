@@ -40,7 +40,7 @@ The network consists of four separate LANs (LAN A–D), with each LAN using a st
 
 # 3. Physical Layout
 
-![alt text](image.png)
+![alt text](../assets/01-Basic-Routing-Lab/image.png)
 
 ---
 

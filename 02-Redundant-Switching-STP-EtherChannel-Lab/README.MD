@@ -51,7 +51,7 @@ Multiple switch connections provide alternate paths between devices. STP prevent
 
 # 3. Physical Layout
 
-![alt text](image-4.png)
+![alt text](../assets/02-Redundant-Switching-STP-EtherChannel-Lab/image-4.png)
 
 ## Devices
 
@@ -108,11 +108,11 @@ Expected Result:
 ```
 This bridge is the root
 ```
-![alt text](image-6.png)
+![alt text](../assets/02-Redundant-Switching-STP-EtherChannel-Lab/image-6.png)
 
-![alt text](image-5.png)
+![alt text](../assets/02-Redundant-Switching-STP-EtherChannel-Lab/image-5.png)
 
-![alt text](image-7.png)
+![alt text](../assets/02-Redundant-Switching-STP-EtherChannel-Lab/image-7.png)
 ---
 
 ## STP Port Roles
@@ -184,14 +184,14 @@ show etherchannel summary
 ```
 
 Core 1  
-![alt text](image-1.png)
+![alt text](../assets/02-Redundant-Switching-STP-EtherChannel-Lab/image-1.png)
 
 
 Core 2  
-![alt text](image-2.png)
+![alt text](../assets/02-Redundant-Switching-STP-EtherChannel-Lab/image-2.png)
 
 Core 3  
-![alt text](image-3.png)
+![alt text](../assets/02-Redundant-Switching-STP-EtherChannel-Lab/image-3.png)
 
 
 ## Verify Port Channel Interfaces

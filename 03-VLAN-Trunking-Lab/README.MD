@@ -46,7 +46,7 @@ VLANs are used to logically separate users into different broadcast domains, whi
 
 # 3. Physical Layout
 
-![alt text](image-3.png)
+![alt text](../assets/03-VLAN-Trunking-Lab/image-3.png)
 
 ## Devices
 
@@ -165,7 +165,7 @@ The following order was used to configure VLANs, trunking, EtherChannels, and ST
    show etherchannel summary
    ```
 
-   ![alt text](image-4.png)
+   ![alt text](../assets/03-VLAN-Trunking-Lab/image-4.png)
 
 
    ## 6. Assign access ports to VLANs
@@ -202,20 +202,20 @@ The following order was used to configure VLANs, trunking, EtherChannels, and ST
    ```
    show spanning-tree
    ```
-   ![alt text](image-6.png)
+   ![alt text](../assets/03-VLAN-Trunking-Lab/image-6.png)
 
 
    ### Verification of Vlan segmentation
    VLAN segmentation was verified by testing connectivity between end devices.  
-   ![alt text](image-1.png)
+   ![alt text](../assets/03-VLAN-Trunking-Lab/image-1.png)
 
 
-   ![alt text](image.png)
+   ![alt text](../assets/03-VLAN-Trunking-Lab/image.png)
 
    PCs assigned to the same VLAN were able to communicate successfully, even when connected to different access switches. This confirms that VLANs are correctly extended across trunk links between switches.
    PCs assigned to different VLANs were unable to communicate, confirming that Layer 2 VLAN isolation is functioning as expected.
 
-   ![alt text](https://github.com/Nic-DevOps/Networking/blob/main/03-VLAN-Trunking-Lab/Ping%20Test.gif)
+   ![alt text](../assets/03-VLAN-Trunking-Lab/Ping%20Test.gif)
 
 
 # 6. Future Improvements

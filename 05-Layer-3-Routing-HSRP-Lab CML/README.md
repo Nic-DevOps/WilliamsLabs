@@ -138,7 +138,7 @@ The following order was used to configure VLANs, trunking, EtherChannels, Rapid 
    ```
    show vlan brief
    ```
-![alt text](image.png)
+![alt text](../assets/05-Layer-3-Routing-HSRP-Lab CML/image.png)
 
 
    ## 3. Configure Access Ports
@@ -158,7 +158,7 @@ The following order was used to configure VLANs, trunking, EtherChannels, Rapid 
    ```
    show interfaces status
    ```
- ![alt text](image-2.png)
+ ![alt text](../assets/05-Layer-3-Routing-HSRP-Lab CML/image-2.png)
 
    ## 4. Configure EtherChannels
    ```
@@ -178,8 +178,8 @@ The following order was used to configure VLANs, trunking, EtherChannels, Rapid 
    show etherchannel summary
    show interfaces trunk
    ```
-   ![alt text](image-5.png)
-   ![alt text](image-6.png)
+   ![alt text](../assets/05-Layer-3-Routing-HSRP-Lab CML/image-5.png)
+   ![alt text](../assets/05-Layer-3-Routing-HSRP-Lab CML/image-6.png)
           
    ## 5. Configure STP root and secondary root bridges
    Configure the primary root bridge on CORE1
@@ -196,10 +196,10 @@ The following order was used to configure VLANs, trunking, EtherChannels, Rapid 
    show spanning-tree
    ```
    Core SW1:
-  ![alt text](image.png)
+  ![alt text](../assets/05-Layer-3-Routing-HSRP-Lab CML/image.png)
 
   Core SW2: 
-  ![alt text](image-1.png)
+  ![alt text](../assets/05-Layer-3-Routing-HSRP-Lab CML/image-1.png)
    
 
    ## 6. Configure Layer 3 EtherChannel
@@ -235,7 +235,7 @@ The following order was used to configure VLANs, trunking, EtherChannels, Rapid 
    show etherchannel summary
    show ip interface brief
    ```
-   ![alt text](image-10.png)
+   ![alt text](../assets/05-Layer-3-Routing-HSRP-Lab/image-10.png)
 
    
 
@@ -270,10 +270,10 @@ The following order was used to configure VLANs, trunking, EtherChannels, Rapid 
    show ip interface brief
    ```
    Core SW1:
-   ![alt text](image-3.png)
+   ![alt text](../assets/05-Layer-3-Routing-HSRP-Lab CML/image-3.png)
 
    Core SW2: 
-   ![alt text](image-2.png)
+   ![alt text](../assets/05-Layer-3-Routing-HSRP-Lab CML/image-2.png)
    
    ## 8. Configure HSRP
 
@@ -303,10 +303,10 @@ The following order was used to configure VLANs, trunking, EtherChannels, Rapid 
    show standby brief
    ```
    Core SW1:
-   ![alt text](image-5.png)
+   ![alt text](../assets/05-Layer-3-Routing-HSRP-Lab CML/image-5.png)
 
    Core SW2:
-   ![alt text](image-4.png)
+   ![alt text](../assets/05-Layer-3-Routing-HSRP-Lab CML/image-4.png)
 
    ## 9. Configure End Devices
    Assign static IP addresses to PCs and use the HSRP virtual IP as the default gateway.
@@ -315,7 +315,7 @@ The following order was used to configure VLANs, trunking, EtherChannels, Rapid 
   sudo ip addr add 10.0.10.10/24 dev eth0
   sudo ip route add default via 10.0.10.1
   ```
-![alt text](image-6.png)
+![alt text](../assets/05-Layer-3-Routing-HSRP-Lab CML/image-6.png)
 
          
 # 7. Verify configuration and save changes
@@ -326,11 +326,11 @@ VLAN segmentation was verified by testing connectivity between end devices.
 ### Intra-VLAN
 Sales PC → Sales PC
 
-![alt text](https://github.com/Nic-DevOps/Networking/blob/main/05-Layer-3-Routing-HSRP-Lab%20CML/Intra%20VLAN%20Ping%20Test.gif)
+![alt text](../assets/05-Layer-3-Routing-HSRP-Lab%20CML/Intra%20VLAN%20Ping%20Test.gif)
 
 ### Inter-VLAN Routing
 Engineering PC → Manager PC
-![alt text](https://github.com/Nic-DevOps/Networking/blob/main/05-Layer-3-Routing-HSRP-Lab%20CML/Inter%20VLAN%20Ping%20Test.gif)
+![alt text](../assets/05-Layer-3-Routing-HSRP-Lab%20CML/Inter%20VLAN%20Ping%20Test.gif)
 
 ### Test HSRP Failover
 
@@ -344,7 +344,7 @@ Shut down the active SVI or core switch and verify that the standby core assumes
 
 Verify that connectivity remains available after failover.
 
-![alt text](https://github.com/Nic-DevOps/Networking/blob/main/05-Layer-3-Routing-HSRP-Lab/HSRP%20failover.gif)
+![alt text](../assets/05-Layer-3-Routing-HSRP-Lab/HSRP%20failover.gif)
 
 
 

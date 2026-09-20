@@ -15,7 +15,7 @@
 
 The monitoring infrastructure is built on the Debian 13 Monitoring VM and uses Prometheus to collect network metrics through the SNMP Exporter, with Grafana providing visualization.
 
-![alt text](image-1.png)
+![alt text](../assets/07-Monitoring-Lab/image-1.png)
 
 
 ## 2. Configure SNMP on Network Devices
@@ -31,7 +31,7 @@ Verify that the Monitoring VM can reach the devices and perform SNMP queries bef
 ```bash
 snmpwalk -v2c -c 'community-string' <device-ip> 1.3.6.1.2.1.1.5.0
 ```
-![alt text](image.png)
+![alt text](../assets/07-Monitoring-Lab/image.png)
 
 
 A successful response confirms that the device is reachable, SNMP is enabled, the community string is correct, and SNMP queries are being returned.

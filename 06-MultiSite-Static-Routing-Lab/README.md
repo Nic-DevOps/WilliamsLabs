@@ -43,7 +43,7 @@ This topology extends the existing Layer 3 campus network into a multi-site envi
 ---
 
 # 3. Physical Layout
-![alt text](image.png)
+![alt text](../assets/06-MultiSite-Static-Routing-Lab/image.png)
 
 
 ## Devices
@@ -160,7 +160,7 @@ For Site B, just like Site A, the SVI on the single core switch acts as the defa
 
 # 6. Configuration Order
 
-Recreate the [existing Lab 5 infrastructure](https://github.com/Nic-DevOps/Networking/blob/main/05-Layer-3-Routing-HSRP-Lab/README.MD) Access switches, VLANs, trunks, EtherChannel, SVIs, and HSRP as applicable, then extend it into the multi-site network. 
+Recreate the [existing Lab 5 infrastructure](https://github.com/Nic-DevOps/WilliamsLabs/blob/main/05-Layer-3-Routing-HSRP-Lab/README.md) Access switches, VLANs, trunks, EtherChannel, SVIs, and HSRP as applicable, then extend it into the multi-site network. 
 
 ## 1. Basic site router configuration
 Configure hostnames and no ip domain-lookup.
@@ -175,14 +175,14 @@ interface GigabitEthernet2/0
  ip address 10.0.100.5 255.255.255.252
  no shutdown
 ```
-![alt text](image-1.png)
+![alt text](../assets/06-MultiSite-Static-Routing-Lab/image-1.png)
 
 Repeat the same configuration for each listed device pair, using the appropriate /30 subnet and IP addresses. Configure both ends and verify each link with ping.
 
 ## Configure Router-to-ISP links
 
 ### HQ-Router01 → ISP-Router01  
-![alt text](image-2.png)
+![alt text](../assets/06-MultiSite-Static-Routing-Lab/image-2.png)
 
 Repeat the same configuration for each listed device pair, using the appropriate /30 subnet and IP addresses. Configure both ends and verify each link with ping.
 
@@ -195,18 +195,18 @@ Verify routing tables.
 ```
 show ip route
 ```
-![alt text](image-3.png)
+![alt text](../assets/06-MultiSite-Static-Routing-Lab/image-3.png)
 
 ## Configure branch end devices
 
 ### HQ Research PC  
-![alt text](image-4.png)
+![alt text](../assets/06-MultiSite-Static-Routing-Lab/image-4.png)
 
 ### Site A User PC
-![alt text](image-5.png)
+![alt text](../assets/06-MultiSite-Static-Routing-Lab/image-5.png)
 
 ### Site B Server
-![alt text](image-6.png)
+![alt text](../assets/06-MultiSite-Static-Routing-Lab/image-6.png)
 
 
 
@@ -215,11 +215,11 @@ show ip route
 # 7. Verify Routing
 ### Traceroute from HQ User PC 10.10.10.10 to Site A Research PC 10.20.30.10
 
-![alt text](https://github.com/Nic-DevOps/Networking/blob/main/06-MultiSite-Static-Routing-Lab/Traceroute.gif)
+![alt text](../assets/06-MultiSite-Static-Routing-Lab/Traceroute.gif)
 
 ### Traceroute from Site A Guest PC 10.20.40.10 to Site B Server 10.30.20.10
 
-![alt text](https://github.com/Nic-DevOps/Networking/blob/main/06-MultiSite-Static-Routing-Lab/Traceroute%20Site%20A%20to%20Site%20B.gif)
+![alt text](../assets/06-MultiSite-Static-Routing-Lab/Traceroute%20Site%20A%20to%20Site%20B.gif)
 
 ---
 

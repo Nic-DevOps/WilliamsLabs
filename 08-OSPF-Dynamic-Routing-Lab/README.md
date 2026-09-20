@@ -165,7 +165,7 @@ Check the OSPF neighbor table:
 ```bash
 show ip ospf neighbor 
 ```
-![alt text](image.png)
+![alt text](../assets/08-OSPF-Dynamic-Routing-Lab/image.png)
 
 OSPF neighbors should reach the `FULL` state.
 
@@ -191,7 +191,7 @@ From HQ, test Site A:
 ```bash
 ping <Site-A-IP>
 ```
-![alt text](image-1.png)
+![alt text](../assets/08-OSPF-Dynamic-Routing-Lab/image-1.png)
 
 
 ## 10.  Verification

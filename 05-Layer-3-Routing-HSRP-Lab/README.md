@@ -132,7 +132,7 @@ The following order was used to configure VLANs, trunking, EtherChannels, Rapid 
    ```
    show vlan brief
    ```
-![alt text](image.png)
+![alt text](../assets/05-Layer-3-Routing-HSRP-Lab/image.png)
 
 
    ## 3. Configure Access Ports
@@ -152,7 +152,7 @@ The following order was used to configure VLANs, trunking, EtherChannels, Rapid 
    ```
    show interfaces status
    ```
-   ![alt text](image-2.png)
+   ![alt text](../assets/05-Layer-3-Routing-HSRP-Lab/image-2.png)
 
    ## 4. Configure EtherChannels
    ```
@@ -172,8 +172,8 @@ The following order was used to configure VLANs, trunking, EtherChannels, Rapid 
    show etherchannel summary
    show interfaces trunk
    ```
-   ![alt text](image-5.png)
-   ![alt text](image-6.png)
+   ![alt text](../assets/05-Layer-3-Routing-HSRP-Lab/image-5.png)
+   ![alt text](../assets/05-Layer-3-Routing-HSRP-Lab/image-6.png)
           
    ## 5. Configure STP root and secondary root bridges
    Configure the primary root bridge on CORE1
@@ -190,13 +190,13 @@ The following order was used to configure VLANs, trunking, EtherChannels, Rapid 
    show spanning-tree
    ```
    Core SW1:
-   ![alt text](image-7.png)
+   ![alt text](../assets/05-Layer-3-Routing-HSRP-Lab/image-7.png)
 
    Core SW2: 
-   ![alt text](image-8.png)
+   ![alt text](../assets/05-Layer-3-Routing-HSRP-Lab/image-8.png)
 
    Access SW1-4 are similar configurations:
-   ![alt text](image-9.png)
+   ![alt text](../assets/05-Layer-3-Routing-HSRP-Lab/image-9.png)
 
    ## 6. Configure Layer 3 EtherChannel
 
@@ -231,7 +231,7 @@ The following order was used to configure VLANs, trunking, EtherChannels, Rapid 
    show etherchannel summary
    show ip interface brief
    ```
-   ![alt text](image-10.png)
+   ![alt text](../assets/05-Layer-3-Routing-HSRP-Lab/image-10.png)
 
    ## 7. Configure SVIs 
 
@@ -264,10 +264,10 @@ The following order was used to configure VLANs, trunking, EtherChannels, Rapid 
    show ip interface brief
    ```
    Core SW1:
-   ![alt text](image-1.png)
+   ![alt text](../assets/05-Layer-3-Routing-HSRP-Lab/image-1.png)
 
    Core SW2:
-   ![alt text](image.png)
+   ![alt text](../assets/05-Layer-3-Routing-HSRP-Lab/image.png)
    
    ## 8. Configure HSRP
 
@@ -294,13 +294,13 @@ The following order was used to configure VLANs, trunking, EtherChannels, Rapid 
    show standby brief
    ```
    Core SW1:
-   ![alt text](image-2.png)
+   ![alt text](../assets/05-Layer-3-Routing-HSRP-Lab/image-2.png)
    Core SW2:
-   ![alt text](image-3.png)
+   ![alt text](../assets/05-Layer-3-Routing-HSRP-Lab/image-3.png)
 
    ## 9. Configure End Devices
    Assign static IP addresses to PCs and use the HSRP virtual IP as the default gateway.
-   ![alt text](image-4.png)
+   ![alt text](../assets/05-Layer-3-Routing-HSRP-Lab/image-4.png)
 
          
 # 7. Verify configuration and save changes
@@ -311,19 +311,19 @@ VLAN segmentation was verified by testing connectivity between end devices.
 ### Intra-VLAN
 Sales PC → Sales PC
 
-![alt text](https://github.com/Nic-DevOps/Networking/blob/main/05-Layer-3-Routing-HSRP-Lab/Intra%20Vlan%20Ping%20Test.gif)
+![alt text](../assets/05-Layer-3-Routing-HSRP-Lab/Intra%20Vlan%20Ping%20Test.gif)
 
 
 ### Default Gateway
 Tests router connection.
 HR PC → VLAN 30 Gateway
 
-![alt text](https://github.com/Nic-DevOps/Networking/blob/main/05-Layer-3-Routing-HSRP-Lab/Gateway%20ping%20test.gif)
+![alt text](../assets/05-Layer-3-Routing-HSRP-Lab/Gateway%20Ping%20Test.gif)
 
 
 ### Inter-VLAN Routing
 Engineering PC → Manager PC
-![alt text](https://github.com/Nic-DevOps/Networking/blob/main/05-Layer-3-Routing-HSRP-Lab/Inter%20Vlan%20Ping%20Test.gif)
+![alt text](../assets/05-Layer-3-Routing-HSRP-Lab/Inter%20Vlan%20Ping%20Test.gif)
 
 ### Test HSRP Failover
 
@@ -331,15 +331,15 @@ Verify the active and standby HSRP roles:
 ```
 show standby brief
 ```
-![alt text](image-12.png)
-![alt text](image-11.png)
+![alt text](../assets/05-Layer-3-Routing-HSRP-Lab/image-12.png)
+![alt text](../assets/05-Layer-3-Routing-HSRP-Lab/image-11.png)
 
 Shut down the active SVI or core switch and verify that the standby core assumes the virtual gateway.
 
 
 Verify that connectivity remains available after failover.
 
-![alt text](https://github.com/Nic-DevOps/Networking/blob/main/05-Layer-3-Routing-HSRP-Lab/HSRP%20failover.gif)
+![alt text](../assets/05-Layer-3-Routing-HSRP-Lab/HSRP%20failover.gif)
 
 
 
