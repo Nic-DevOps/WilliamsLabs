@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Network Services (DHCP) Lab · Williams Labs</title>
-<meta name="description" content="Centralized Kea DHCP with Cisco DHCP relay across all three sites, SSH management on every device, and monitoring extended from HQ-only to the full multi-site network.">
+<title>Network Services Lab · Williams Labs</title>
+<meta name="description" content="Centralized Kea DHCP with Cisco DHCP relay across all three sites, SSH management and SNMP enabled on every device, and monitoring extended from HQ-only to the full multi-site network.">
 <link rel="stylesheet" href="../css/style.css">
 <script src="../js/theme.js"></script>
 </head>
@@ -35,13 +35,13 @@
 <section style="padding-top:3rem; padding-bottom:0; border-bottom:none;">
   <div class="wrap">
     <div class="breadcrumb"><a href="../index.html">Home</a> / <a href="../index.html#projects">Projects</a> / 09 · Network Services</div>
-    <span class="status-pill progress">In Progress</span>
-    <h1 style="font-size:2.1rem; letter-spacing:-0.02em; margin: 0.75rem 0 0;">Network Services (DHCP) Lab</h1>
-    <p style="color:var(--text-dim); font-size:1.05rem; max-width:680px; margin-top:0.75rem;">Deploy a centralized DHCP server at HQ, configure DHCP relay for remote-site VLANs, enable SSH management fleet-wide, and extend Prometheus/Grafana monitoring to Site A and Site B.</p>
+    <span class="status-pill complete">Complete</span>
+    <h1 style="font-size:2.1rem; letter-spacing:-0.02em; margin: 0.75rem 0 0;">Network Services Lab</h1>
+    <p style="color:var(--text-dim); font-size:1.05rem; max-width:680px; margin-top:0.75rem;">Deploy a centralized DHCP server at HQ, configure DHCP relay for remote-site VLANs, enable SSH management and SNMP fleet-wide, and extend Prometheus/Grafana monitoring to Site A and Site B.</p>
     <div class="meta-row">
       <span><strong>DHCP server:</strong> Kea DHCPv4, 10.10.50.22</span>
       <span><strong>Sites monitored:</strong> HQ, Site A, Site B</span>
-      <span><strong>Status:</strong> In Progress</span>
+      <span><strong>Status:</strong> Complete</span>
     </div>
   </div>
 </section>
@@ -51,7 +51,7 @@
     <div class="prose">
 
 <h2>Overview</h2>
-<p>Building on the OSPF-routed multi-site network from Lab 08, this lab centralizes DHCP at HQ using Kea, relays requests from Site A and Site B over the existing WAN, standardizes SSH management across every switch and router, and extends the monitoring stack from Lab 07 to cover all three sites instead of just HQ.</p>
+<p>Building on the OSPF-routed multi-site network from Lab 08, this lab centralizes DHCP at HQ using Kea, relays requests from Site A and Site B over the existing WAN, standardizes SSH management across every switch and router, enables SNMP on the remote-site devices, and extends the monitoring stack from Lab 07 to cover all three sites instead of just HQ.</p>
 
 <h2>SSH management</h2>
 <pre>username admin privilege 15 secret &lt;PASSWORD&gt;
@@ -62,6 +62,13 @@ ip ssh version 2
 line vty 0 4
  login local
  transport input ssh</pre>
+
+<h2>SNMP on Site A &amp; Site B devices</h2>
+<p>Lab 07 enabled SNMP at HQ only. Here the same read-only community is applied to every Site A and Site B switch and router so Prometheus can scrape them too:</p>
+<pre>conf t
+snmp-server community &lt;community-string&gt; RO</pre>
+<p>Reachability is verified from the monitoring VM before adding each device to the Prometheus scrape config:</p>
+<pre>snmpwalk -v2c -c 'community-string' &lt;device-ip&gt; 1.3.6.1.2.1.1.5.0</pre>
 
 <h2>DHCP design</h2>
 <p>The DHCP server sits in the HQ NET-MGMT VLAN on a static IP; each client VLAN receives addresses dynamically via relay.</p>
