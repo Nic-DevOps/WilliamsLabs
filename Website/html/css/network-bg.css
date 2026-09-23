@@ -1,0 +1,98 @@
+/*
+  Vast interconnected network background, with scroll-linked descent
+  through the topology (edge -> access -> distribution -> core -> ...).
+
+  Colors are aliased to Williams Labs' own theme variables (see style.css)
+  rather than hardcoded, so the background automatically follows the site's
+  light/dark toggle -- no separate palette to keep in sync.
+
+  Performance notes:
+  - The SVG itself never re-renders: only a CSS `transform` on
+    #network-bg-inner changes, driven by a single rAF-throttled scroll
+    handler (see network-bg.js). transform is compositor-only, so this
+    costs nothing on layout/paint even on a low-end box.
+  - Each connection is two lines: a thin static "wire" (#network-links, no
+    animation) and a bolder dashed line riding on top of it that carries a
+    SMIL <animate> (flowing "packet"), plus a small fixed set of pulsing
+    node halos (see generate_network.py). Animation count scales with link
+    count, but each is a cheap dashoffset animation with no layout/paint cost.
+  - prefers-reduced-motion disables both the scroll parallax and the
+    pulse/dash animations; the network still renders as a static backdrop.
+*/
+
+:root {
+  --nbg-line: var(--border-hover, #4a6b60);
+  --nbg-node: var(--text-faint, #6f9a8e);
+  --nbg-accent: var(--accent, #2bc492);
+  --bg-page: var(--bg, #0b0f0e);
+  /* Vignette needs a plain "r, g, b" triplet (rgba(var(...), alpha) can't
+     take a hex custom property) -- kept in sync with --bg per theme below. */
+  --nbg-vignette-rgb: 246, 248, 249;
+}
+
+html[data-theme="dark"] {
+  --nbg-vignette-rgb: 11, 14, 17;
+}
+
+#network-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+  background: var(--bg-page, #0b0f0e);
+}
+
+#network-bg-inner {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  /* The SVG's own scale is locked to viewport WIDTH (width:100% + viewBox +
+     preserveAspectRatio="slice" below) -- so if this box's height were set
+     in vh (pure viewport-height units, unrelated to width), narrowing the
+     window would shrink the SVG's px-per-unit scale (via width) while this
+     box's height stayed put, exposing MORE of the tall canvas in the same
+     pixel height and making the topology look increasingly squashed
+     vertically as the window narrows. Sizing height in vw instead keeps it
+     tied to the same axis that drives the SVG's scale, so the amount of
+     topology visible per screen (the "zoom") stays constant as width
+     changes. The vh term is just a floor so a tall, narrow window (a phone
+     in portrait) still gets enough scroll travel for the parallax effect. */
+  height: max(160vw, 130vh);
+  will-change: transform;
+  transform: translateY(0);
+}
+
+#network-bg-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  opacity: 0.9;
+}
+
+/* gentle vignette so page content stays readable without a solid overlay */
+#network-bg::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(var(--nbg-vignette-rgb), 0.1) 0%,
+    rgba(var(--nbg-vignette-rgb), 0.45) 65%,
+    rgba(var(--nbg-vignette-rgb), 0.7) 100%
+  );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #network-bg-inner {
+    transform: none !important;
+  }
+  #network-links-flow line,
+  #network-nodes-active circle {
+    animation: none;
+  }
+  #network-bg-svg animate {
+    display: none;
+  }
+}

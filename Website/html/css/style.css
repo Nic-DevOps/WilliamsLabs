@@ -45,11 +45,15 @@ html[data-theme="dark"] header.site-header { background: rgba(11, 14, 17, 0.85);
 
 * { box-sizing: border-box; }
 
-html { scroll-behavior: smooth; }
+html { scroll-behavior: smooth; background: var(--bg); }
 
 body {
   margin: 0;
-  background: var(--bg);
+  /* background lives on html, not body -- see network-bg.css: a #network-bg
+     layer at z-index:-1 needs body to be transparent, or body's own opaque
+     background paints over it (CSS 2.1 Appendix E: body's in-flow background
+     is painted after negative-z-index descendants). */
+  background: transparent;
   color: var(--text);
   font-family: var(--sans);
   line-height: 1.6;
