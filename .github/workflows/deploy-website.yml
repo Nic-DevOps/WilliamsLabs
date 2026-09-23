@@ -10,6 +10,15 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
+      # SSH on the droplet only accepts connections arriving over Tailscale
+      # (ufw allows port 22 on tailscale0 only, not the public interface),
+      # so the runner joins the tailnet first and reaches DEPLOY_HOST via
+      # its Tailscale IP instead of its public IP.
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v2
+        with:
+          authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
+
       # The deploy key on the server is restricted to a forced command
       # (see README/setup notes), so whatever is sent here is ignored by
       # sshd in favor of running /home/deploy/deploy-website.sh on the droplet.
