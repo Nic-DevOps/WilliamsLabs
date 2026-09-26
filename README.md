@@ -17,10 +17,12 @@ A collection of networking projects focused on building, configuring, and troubl
 - [x] [07-Monitoring-Lab](https://github.com/Nic-DevOps/WilliamsLabs/blob/main/07-Monitoring-Lab/README.md)
 - [x] [08-OSPF-Dynamic-Routing-Lab](https://github.com/Nic-DevOps/WilliamsLabs/blob/main/08-OSPF-Dynamic-Routing-Lab/README.md)
 - [x] [09-Network-Services](https://github.com/Nic-DevOps/WilliamsLabs/blob/main/09-Network-Services/README.md)
+- [x] [10-Active-Directory-Lab](https://github.com/Nic-DevOps/WilliamsLabs/blob/main/10-Active-Directory-Lab/README.md)
+
 ## Planned Projects
 
-- [ ] 10-Network-Security-ACL-NAT-Firewall-Lab
-- [ ] 11-WAN-VPN-SiteToSite-Lab
-- [ ] 12-Network-Automation-Ansible-Lab
+- [ ] [11-Network-Security-Firewall-Lab](https://github.com/Nic-DevOps/WilliamsLabs/blob/main/11-Network-Security-Firewall-Lab/README.md) (in progress)
+- [ ] 12-WAN-VPN-SiteToSite-Lab
+- [ ] 13-Network-Automation-Ansible-Lab
 
 
