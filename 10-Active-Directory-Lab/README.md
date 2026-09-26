@@ -65,7 +65,7 @@ The VM's adapter was moved off VMware's default NAT network onto VMnet10, which 
 ```powershell
 Get-NetAdapter
 New-NetIPAddress -InterfaceIndex <ifIndex> -IPAddress 10.10.50.50 -PrefixLength 24 -DefaultGateway 10.10.50.1
-Set-DnsClientServerAddress -InterfaceIndex <ifIndex> -ServerAddresses 127.0.0.1
+Set-DnsClientServerAddress -InterfaceIndex <ifIndex> -ServerAddresses 10.10.50.50
 ```
 
 ## 5.2 AD DS Installation and Promotion
