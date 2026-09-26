@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Active Directory Lab · Williams Labs</title>
+<meta name="description" content="Windows Server 2022 domain controller running AD DS and DNS on the HQ server VLAN, with a client on a separate routed VLAN joined to the domain and receiving user Group Policy.">
+<link rel="stylesheet" href="../css/style.css">
+<script src="../js/theme.js"></script>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="nav-inner">
+    <a href="../index.html" class="brand"><span class="dot"></span>Williams Labs</a>
+    <nav class="main-nav">
+      <a href="../index.html">Home</a>
+      <a href="../index.html#projects">Projects</a>
+      <a href="../index.html#monitoring">Monitoring</a>
+      <a href="../index.html#technologies">Technologies</a>
+      <a href="https://github.com/Nic-DevOps/WilliamsLabs" target="_blank" rel="noopener">GitHub</a>
+      <div class="theme-toggle" id="theme-toggle" role="group" aria-label="Theme">
+        <span class="theme-toggle-thumb"></span>
+        <button type="button" class="theme-toggle-btn" data-theme-value="light" aria-label="Light mode">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+        </button>
+        <button type="button" class="theme-toggle-btn" data-theme-value="dark" aria-label="Dark mode">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </button>
+      </div>
+    </nav>
+  </div>
+</header>
+
+<section style="padding-top:3rem; padding-bottom:0; border-bottom:none;">
+  <div class="wrap">
+    <div class="breadcrumb"><a href="../index.html">Home</a> / <a href="../index.html#projects">Projects</a> / 10 · Active Directory</div>
+    <span class="status-pill complete">Complete</span>
+    <h1 style="font-size:2.1rem; letter-spacing:-0.02em; margin: 0.75rem 0 0;">Active Directory Lab</h1>
+    <p style="color:var(--text-dim); font-size:1.05rem; max-width:680px; margin-top:0.75rem;">Stand up a Windows Server 2022 domain controller with AD DS and DNS on the HQ server VLAN, join a client from a separate routed VLAN, and push user Group Policy to it end to end.</p>
+    <div class="meta-row">
+      <span><strong>Domain:</strong> corp.williamslabs.ca</span>
+      <span><strong>DC:</strong> AD-01, 10.10.50.50</span>
+      <span><strong>Status:</strong> Complete</span>
+    </div>
+  </div>
+</section>
+
+<section style="padding-top:0;">
+  <div class="wrap">
+    <div class="prose">
+
+<h2>Overview</h2>
+<p>Building on the multi-site network from Labs 06–09, this lab gives the CML topology a real Windows identity layer. AD-01 runs on VMware Workstation, bridged into the HQ server VLAN, and becomes the forest root domain controller and DNS server for <code>corp.williamslabs.ca</code>. A Windows client on the HQ user VLAN joins the domain across inter-VLAN routing and receives a user GPO, proving DNS, Kerberos and Group Policy all work between routed subnets.</p>
+
+<h2>Environment</h2>
+<table class="data-table">
+<thead><tr><th>Component</th><th>Value</th></tr></thead>
+<tbody>
+<tr><td>Hypervisor</td><td>VMware Workstation</td></tr>
+<tr><td>Server OS</td><td>Windows Server 2022 (evaluation)</td></tr>
+<tr><td>Roles</td><td>AD DS, DNS</td></tr>
+<tr><td>Server VLAN</td><td>10.10.50.0/24 via VMnet10 (bridged to HQ in CML)</td></tr>
+<tr><td>AD-01</td><td>10.10.50.50/24, gateway 10.10.50.1, DNS 10.10.50.50</td></tr>
+<tr><td>Test client</td><td>User VLAN 10, 10.10.10.100/24 via VMnet2</td></tr>
+<tr><td>NetBox</td><td>AD-01, listed under HQ</td></tr>
+</tbody>
+</table>
+<p>The client and the DC sit on different subnets on purpose. Traffic between 10.10.10.0/24 and 10.10.50.0/24 is routed by SVIs on the HQ core switches (HSRP from Lab 05/06), the same path any real workstation would take to reach a domain controller.</p>
+
+<h2>Promoting the domain controller</h2>
+<p>The AD DS role is installed from Server Manager, then the server is promoted to a new forest with integrated DNS. The PowerShell equivalent:</p>
+<pre>Install-ADDSForest `
+  -DomainName "corp.williamslabs.ca" `
+  -DomainNetbiosName "CORP" `
+  -ForestMode "WinThreshold" `
+  -DomainMode "WinThreshold" `
+  -InstallDns:$true `
+  -SafeModeAdministratorPassword (ConvertTo-SecureString "&lt;DSRM password&gt;" -AsPlainText -Force)</pre>
+<p>Hostnames stay short (AD-01, AD-02, ...) and site context lives in NetBox rather than in the domain name or hostname, so the domain stays stable as DCs are added per site.</p>
+
+<h2>Group Policy</h2>
+<p>A <strong>Corp Users - Baseline</strong> GPO is linked to the Corp Users OU and enables <em>Prohibit access to Control Panel and PC settings</em>, a common baseline control that stops standard users changing system settings on managed workstations.</p>
+
+<h2>Verification</h2>
+<table class="data-table">
+<thead><tr><th>Check</th><th>Result</th></tr></thead>
+<tbody>
+<tr><td>nltest /dsgetdc:corp.williamslabs.ca</td><td>Returns AD-01</td></tr>
+<tr><td>dcdiag</td><td>All critical tests pass</td></tr>
+<tr><td>whoami /fqdn (client)</td><td>CN=Test User1,OU=Corp Users,...</td></tr>
+<tr><td>Test-ComputerSecureChannel</td><td>True</td></tr>
+<tr><td>nltest /sc_verify</td><td>NERR_Success</td></tr>
+<tr><td>Control Panel as tuser1</td><td>Blocked by GPO</td></tr>
+</tbody>
+</table>
+<p>One gotcha worth recording: <code>Test-ComputerSecureChannel</code> returns <code>False</code> from a non-elevated prompt even when the trust is healthy. Run it elevated before assuming the machine account is broken.</p>
+
+<h2>What's next</h2>
+<p>Planned: a firewall in front of the server VLAN allowing only the ports AD needs (DNS, Kerberos, LDAP, SMB, RPC), a fuller GPO baseline, LDAP signing and channel binding, and a domain controller per site mapped with AD Sites and Services.</p>
+
+    </div>
+
+    <div class="project-nav">
+      <a href="homelab-monitoring.html">&larr; Monitoring VM</a>
+      <a href="../index.html#projects">All Projects &rarr;</a>
+    </div>
+  </div>
+</section>
+
+<footer class="site-footer">
+  Williams Labs &middot; Infrastructure Lab
+</footer>
+
+</body>
+</html>
