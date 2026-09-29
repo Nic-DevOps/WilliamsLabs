@@ -21,7 +21,7 @@ A collection of networking projects focused on building, configuring, and troubl
 
 ## Planned Projects
 
-- [ ] [11-Network-Security-Firewall-Lab](https://github.com/Nic-DevOps/WilliamsLabs/blob/main/11-Network-Security-Firewall-Lab/README.md) (in progress)
+- [ ] [11-Firewalls-Security-Lab](https://github.com/Nic-DevOps/WilliamsLabs/blob/main/11-Firewalls-Security-Lab/README.md) (in progress)
 - [ ] 12-WAN-VPN-SiteToSite-Lab
 - [ ] 13-Network-Automation-Ansible-Lab
 
