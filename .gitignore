@@ -4,3 +4,7 @@ NetBox/
 Provisioning/
 Networking/
 Python-Scripts/
+
+# Local secrets (API tokens, credentials) - never commit
+.secrets/
+*.env
