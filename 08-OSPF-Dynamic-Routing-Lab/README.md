@@ -41,9 +41,9 @@ Lab 8 uses the same multi-site topology from Lab 6, but replaces static routing 
 
 | Link | Network | Device A | Device B |
 |---|---|---|---|
-| HQ ↔ ISP | `10.0.100.16/30` | HQ-Router01: `10.0.100.17` | ISP-Router01: `10.0.100.18` |
-| Site A ↔ ISP | `10.0.100.20/30` | SiteA-Router01: `10.0.100.21` | ISP-Router01: `10.0.100.22` |
-| Site B ↔ ISP | `10.0.100.24/30` | SiteB-Router01: `10.0.100.25` | ISP-Router01: `10.0.100.26` |
+| HQ ↔ ISP | `10.0.100.16/30` | HQ-Router01: `10.0.100.17` | Hub-Router01: `10.0.100.18` |
+| Site A ↔ ISP | `10.0.100.20/30` | SiteA-Router01: `10.0.100.21` | Hub-Router01: `10.0.100.22` |
+| Site B ↔ ISP | `10.0.100.24/30` | SiteB-Router01: `10.0.100.25` | Hub-Router01: `10.0.100.26` |
 
 
 # 3. OSPF Design
@@ -94,7 +94,7 @@ To ensure stable OSPF adjacencies and clear identification, configure a Loopback
 | SiteA-CoreSW01 | 10.255.2.10/32 | 10.255.2.10 |
 | SiteB-Router01 | 10.255.3.1/32 | 10.255.3.1 |
 | SiteB-CoreSW01 | 10.255.3.10/32 | 10.255.3.10 |
-| ISP-Router01 | 10.255.0.1/32 | 10.255.0.1 |
+| Hub-Router01 | 10.0.255.1/32 | 10.0.255.1 |
 
 
 

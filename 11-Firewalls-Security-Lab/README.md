@@ -25,14 +25,14 @@ Lab 11 builds on the multi-site OSPF infrastructure from Lab 8 and the network-s
 
 ### Path to WAN (per site)
 
-**Core Switch(es) → Firewall → Site Router → WAN-Router01**
+**Core Switch(es) → Firewall → Site Router → Hub-Router01**
 
 - **HQ**: 2 core switches, previously EtherChannel-bundled to a single site router. Firewall platform: **FTDv**.
 - **Site A / Site B**: 1 core switch each, single uplink to their own site router. Firewall platform: **ASAv**.
 
 ### Placement Rationale
 
-The site router handles inter-site routing via WAN-Router01, so placing the firewall on the core-switch side of it means every packet crossing the LAN/WAN boundary — inbound or outbound, inter-site or otherwise — passes through the firewall first. This also keeps the firewall closest to what it protects and avoids touching the site router's existing routing setup toward WAN-Router01.
+The site router handles inter-site routing via Hub-Router01, so placing the firewall on the core-switch side of it means every packet crossing the LAN/WAN boundary — inbound or outbound, inter-site or otherwise — passes through the firewall first. This also keeps the firewall closest to what it protects and avoids touching the site router's existing routing setup toward Hub-Router01.
 
 ### HQ EtherChannel Change
 
@@ -217,7 +217,7 @@ crypto key generate rsa modulus 2048
 7. **Decommissioned old direct Core-SW↔Router links** (the pre-firewall EtherChannel-era paths) that were still up and bypassing the firewall entirely — shut down + removed IP + removed OSPF network statement on CoreSW01, CoreSW02, and both corresponding interfaces on Router01. Done via console access (not the live SSH session) to avoid self-lockout, one device at a time.
 8. **SSH to Router01 broke** after decommissioning the old links — root-caused to the firewall's Access Control Policy having **zero rules configured**, so the implicit default-deny blocked all transit traffic (only self-originated traffic from the firewall itself, e.g. its own pings, was unaffected). Security zones (`inside_zone`, `outside_zone`) were already correctly populated with the right interfaces — the issue was purely the missing access rule, not zone membership.
 9. **Fix applied**: added a temporary rule `TEMP-Allow-All-Baseline-Test` (Source Zone: Any → Destination Zone: Any, Action: Allow) to restore full pass-through while baseline connectivity is being validated. **This rule must be replaced with a real default-deny + explicit-allow policy in step 7 of the build order below — it is not a permanent fix.**
-10. **Confirmed fixed**: `show ip ospf neighbor` on Router01 now shows exactly two neighbors — the firewall (`10.10.255.20`) and ISP-Router01 (`10.0.255.1`, untouched) — the two stale direct adjacencies to CoreSW01/02 are gone. Ping and SSH to Router01 restored via the firewall path.
+10. **Confirmed fixed**: `show ip ospf neighbor` on Router01 now shows exactly two neighbors — the firewall (`10.10.255.20`) and Hub-Router01 (`10.0.255.1`, untouched) — the two stale direct adjacencies to CoreSW01/02 are gone. Ping and SSH to Router01 restored via the firewall path.
 11. **SSH to the firewall's own management interface confirmed working** — `10.10.50.40`, default `admin` account, no extra config needed (FTD allows SSH to Mgmt0/0 by default from any source, unlike IOS's require-explicit-config approach).
 12. **Design change (2026-09-28)**: Realized CML cannot run three FTDv instances simultaneously (4 vCPU/8GB minimum each). Decided to keep FTDv at HQ and switch Site A/Site B to **ASAv** instead — see Section 3a for full rationale and platform comparison.
 

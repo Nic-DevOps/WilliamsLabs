@@ -66,7 +66,7 @@ This topology extends the existing Layer 3 campus network into a multi-site envi
 | HQ-Router01 | Cisco Router | HQ Router |
 | SiteA-Router01 | Cisco Router | Site A Router |
 | SiteB-Router01 | Cisco Router | Site B Router |
-| ISP-Router01 | Cisco Router | Simulated ISP / WAN Provider |
+| Hub-Router01 | Cisco Router | Simulated ISP / WAN Provider |
 
 ---
 
@@ -110,9 +110,9 @@ The existing HQ networks are extended by adding separate networks for each branc
 ## Router ↔ ISP Links
 | Link | Network | Device A | Device B |
 |---|---|---|---|
-| HQ ↔ ISP | 10.0.100.16/30 | HQ-Router01: 10.0.100.17 | ISP-Router01: 10.0.100.18 |
-| Site A ↔ ISP | 10.0.100.20/30 | SiteA-Router01: 10.0.100.21 | ISP-Router01: 10.0.100.22 |
-| Site B ↔ ISP | 10.0.100.24/30 | SiteB-Router01: 10.0.100.25 | ISP-Router01: 10.0.100.26|
+| HQ ↔ ISP | 10.0.100.16/30 | HQ-Router01: 10.0.100.17 | Hub-Router01: 10.0.100.18 |
+| Site A ↔ ISP | 10.0.100.20/30 | SiteA-Router01: 10.0.100.21 | Hub-Router01: 10.0.100.22 |
+| Site B ↔ ISP | 10.0.100.24/30 | SiteB-Router01: 10.0.100.25 | Hub-Router01: 10.0.100.26|
 
 ## SVI IP Addressing Plan
 
@@ -181,13 +181,13 @@ Repeat the same configuration for each listed device pair, using the appropriate
 
 ## Configure Router-to-ISP links
 
-### HQ-Router01 → ISP-Router01  
+### HQ-Router01 → Hub-Router01  
 ![alt text](../assets/06-MultiSite-Static-Routing-Lab/image-2.png)
 
 Repeat the same configuration for each listed device pair, using the appropriate /30 subnet and IP addresses. Configure both ends and verify each link with ping.
 
 
-## Configure routes between the three sites through ISP-Router01.
+## Configure routes between the three sites through Hub-Router01.
 HQ: 10.10.0.0/16  
 Site A: 10.20.0.0/16  
 Site B: 10.30.0.0/16  
