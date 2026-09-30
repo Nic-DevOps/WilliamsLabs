@@ -87,14 +87,18 @@ To ensure stable OSPF adjacencies and clear identification, configure a Loopback
 
 | Device | Loopback0 IP / Subnet | Router ID |
 |---|---|---|
-| HQ-Router01 | 10.255.1.1/32 | 10.255.1.1 |
-| HQ-CoreSW01 | 10.255.1.10/32 | 10.255.1.10 |
-| HQ-CoreSW02 | 10.255.1.11/32 | 10.255.1.11 |
+| HQ-Router01 | 10.10.255.1/32 | 10.10.255.1 |
+| HQ-CoreSW01 | 10.10.255.10/32 | 10.10.255.10 |
+| HQ-CoreSW02 | 10.10.255.11/32 | 10.10.255.11 |
 | SiteA-Router01 | 10.255.2.1/32 | 10.255.2.1 |
 | SiteA-CoreSW01 | 10.255.2.10/32 | 10.255.2.10 |
-| SiteB-Router01 | 10.255.3.1/32 | 10.255.3.1 |
-| SiteB-CoreSW01 | 10.255.3.10/32 | 10.255.3.10 |
+| SiteB-Router01 | 10.30.255.1/32 | 10.30.255.1 |
+| SiteB-CoreSW01 | 10.30.255.10/32 | 10.30.255.10 |
 | Hub-Router01 | 10.0.255.1/32 | 10.0.255.1 |
+
+> **Update (September 29th, 2026):** The table above shows the router IDs currently running on each device. After this lab, HQ, Site B, and the hub moved to a newer `10.<site-octet>.255.<device>` scheme, where the site octet matches that site's LAN `/16` (`10` = HQ, `20` = Site A, `30` = Site B, `0` = hub). **Site A has not been migrated yet** and still uses the original `10.255.2.x` addresses from this lab, confirmed from SiteA-Router01's running config. The configuration examples below show the original `10.255.<site>.<device>` scheme as it was first built.
+>
+> **To do:** migrate Site A to the latest scheme — SiteA-Router01 to `10.20.255.1` and SiteA-CoreSW01 to `10.20.255.10` (Loopback0, `router-id`, and the loopback `network` statement on each). Lab 09's Prometheus config already expects SiteA-Router01 at `10.20.255.1`.
 
 
 

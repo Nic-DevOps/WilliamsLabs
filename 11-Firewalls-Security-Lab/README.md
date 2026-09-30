@@ -198,6 +198,8 @@ crypto key generate rsa modulus 2048
 
 # 5. Open Questions / To Decide
 
+- **Site A router-ID migration (to do before the Site A build)**: SiteA-Router01 (`10.255.2.1`) and SiteA-CoreSW01 (`10.255.2.10`) still use the original Lab 8 scheme. Migrate them to `10.20.255.1` and `10.20.255.10` so Site A matches the `10.<site>.255.<device>` convention used by HQ, Site B, and the planned SiteA-Firewall01 (`10.20.255.20`). See the Lab 8 update note.
+
 - **Base policy (HQ/FTDv)**: default-deny with explicit allow rules, or start permissive and tighten? *(Currently running a temporary allow-all rule — see Section 6 log. Real policy design still pending — this is the next major piece of work.)*
 - **Base policy (Site A/B, ASAv)**: default security-level behavior (high→low permit) may avoid needing a temporary allow-all rule, but an explicit ACL will still be needed for low→high traffic and for any tightened policy — to be confirmed during build.
 - **Management platform**: local firewall management (FDM) or centralized (FMC-style)? *(Resolved: using FDM locally for HQ's FTDv; Site A/B ASAv managed via CLI, ASDM optional.)*
