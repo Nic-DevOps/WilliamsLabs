@@ -1,9 +1,9 @@
 # Lab 11 — Firewalls & Security
 
-**Project Name:** 11-Firewalls-Security-Lab
-**Author:** Nicholas Williams
-**Date Created:** September 22nd, 2026
-**Last Updated:** September 28th, 2026
+**Project Name:** 11-Firewalls-Security-Lab  
+**Author:** Nicholas Williams  
+**Date Created:** September 22nd, 2026  
+**Last Updated:** September 28th, 2026  
 **Status:** In Progress — HQ firewall (FTDv) build complete (OSPF, baseline connectivity, SSH mgmt); Site A/Site B redesigned to use ASAv instead of FTDv (CML resource constraints); Site A/B builds not started; real access policy at HQ still pending
 
 ---
@@ -130,7 +130,7 @@ Reuses Lab 9's existing per-site **Net-Mgmt VLAN (VLAN 50)**, already used for S
 | Site A | `10.20.50.0/24` | `10.20.50.40` (planned) | ASAv |
 | Site B | `10.30.50.0/24` | `10.30.50.40` (planned) | ASAv |
 
-VLAN 50 carries no DHCP scope — fully static, so addresses are assigned by hand. At HQ, `.1` in VLAN 50 is the HSRP virtual gateway, `.2`/`.3` are the core switches, and `.10`–`.49` is the network-device range (per Lab 10). `.20`–`.25` are already used by the Provisioning, DHCP01, and SNMP Monitoring VMs at HQ, so HQ-Firewall01 takes `.40`, and `.40` is the standard firewall mgmt address at Site A and Site B as well. Each site's full `/16` (including VLAN 50) is already advertised into OSPF as a single summary network statement, so mgmt traffic is routable across the whole multi-site domain with no new mgmt network or special reachability path required.
+VLAN 50 carries no DHCP scope — fully static, so addresses are assigned by hand. At HQ, `.1` in VLAN 50 is the HSRP virtual gateway, `.2`/`.3` are the core switches, and `.10`–`.49` is the network-device range (per Lab 10). `.20` and `.25` are used by the Provisioning and SNMP Monitoring VMs at HQ (DHCP01 was at `.22` until it moved to the Server VLAN as `10.10.20.22`), so HQ-Firewall01 takes `.40`, and `.40` is the standard firewall mgmt address at Site A and Site B as well. Each site's full `/16` (including VLAN 50) is already advertised into OSPF as a single summary network statement, so mgmt traffic is routable across the whole multi-site domain with no new mgmt network or special reachability path required.
 
 Each firewall connects to its site's VLAN 50 via a dedicated interface into an access port on the core switch (HQ: CoreSW01 Gi2/3 → Firewall Mgmt0/0) — mirroring how physical Firepower appliances use a separate Management0/0 port. Site A/B (ASAv) will use the same VLAN-50-access-port pattern, though ASAv typically manages via a regular data interface rather than a dedicated Management0/0 (to be confirmed during build).
 

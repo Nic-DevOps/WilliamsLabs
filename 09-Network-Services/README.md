@@ -71,13 +71,15 @@ snmp-server community monitoring RO
 
 # 5. DHCP Design
 
-The DHCP server is located in the HQ Net-MGMT VLAN.
+The DHCP server is located in the HQ Server VLAN (VLAN 20).
 
 Setting | Value
 ---|---
-Network | 10.10.50.0/24
-DHCP Server | 10.10.50.22
-Default Gateway | 10.10.50.1
+Network | 10.10.20.0/24
+DHCP Server | 10.10.20.22
+Default Gateway | 10.10.20.1
+
+> **Update (September 29th, 2026):** DHCP01 was moved from the Net-MGMT VLAN (`10.10.50.22`) to the Server VLAN (`10.10.20.22`), so the network-management VLAN carries only switch, router, and firewall management traffic. The relay `ip helper-address` on every DHCP-enabled gateway at HQ, Site A, and Site B was updated to match.
 
 The DHCP server uses a static IP address. VLANs receive addresses dynamically, while infrastructure devices retain static addresses.
 
@@ -116,7 +118,7 @@ DHCP relay is configured on the Layer-3 gateway for each DHCP-enabled VLAN.
 Gateway Interface Configuration Example
 ```cisco
 interface Vlan10  
- ip helper-address 10.10.50.22  
+ ip helper-address 10.10.20.22  
 ```
 
 The same configuration is applied to VLANs 30 and 40, and to the corresponding gateways at Site A and Site B. Where HSRP is configured, the DHCP default gateway is the HSRP virtual IP.

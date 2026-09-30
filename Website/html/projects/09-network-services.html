@@ -39,7 +39,7 @@
     <h1 style="font-size:2.1rem; letter-spacing:-0.02em; margin: 0.75rem 0 0;">Network Services Lab</h1>
     <p style="color:var(--text-dim); font-size:1.05rem; max-width:680px; margin-top:0.75rem;">Deploy a centralized DHCP server at HQ, configure DHCP relay for remote-site VLANs, enable SSH management and SNMP fleet-wide, and extend Prometheus/Grafana monitoring to Site A and Site B.</p>
     <div class="meta-row">
-      <span><strong>DHCP server:</strong> Kea DHCPv4, 10.10.50.22</span>
+      <span><strong>DHCP server:</strong> Kea DHCPv4, 10.10.20.22</span>
       <span><strong>Sites monitored:</strong> HQ, Site A, Site B</span>
       <span><strong>Status:</strong> Complete</span>
     </div>
@@ -71,7 +71,7 @@ snmp-server community &lt;community-string&gt; RO</pre>
 <pre>snmpwalk -v2c -c 'community-string' &lt;device-ip&gt; 1.3.6.1.2.1.1.5.0</pre>
 
 <h2>DHCP design</h2>
-<p>The DHCP server sits in the HQ NET-MGMT VLAN on a static IP; each client VLAN receives addresses dynamically via relay.</p>
+<p>The DHCP server sits in the HQ Server VLAN (VLAN 20) on a static IP, 10.10.20.22; each client VLAN receives addresses dynamically via relay.</p>
 <table class="data-table">
 <thead><tr><th>Site</th><th>VLAN</th><th>Network</th><th>Gateway</th></tr></thead>
 <tbody>
@@ -83,7 +83,7 @@ snmp-server community &lt;community-string&gt; RO</pre>
 
 <p>Relay is configured on the Layer 3 gateway for each DHCP-enabled VLAN — the HSRP virtual IP where HSRP is in play:</p>
 <pre>interface Vlan10
- ip helper-address 10.10.50.22</pre>
+ ip helper-address 10.10.20.22</pre>
 
 <h2>Monitoring extended multi-site</h2>
 <p>Prometheus targets are now organized by <code>site</code> label (HQ, Site A, Site B, Hub) so Grafana can filter the dashboard with a site variable instead of one flat device list:</p>
