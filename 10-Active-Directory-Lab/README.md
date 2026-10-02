@@ -3,7 +3,7 @@
 Project Name: 10-Active-Directory-Lab
 Author: Nicholas Williams
 Date Created: September 19th, 2026
-Last Updated: September 25th, 2026
+Last Updated: October 1st, 2026
 Status: Complete
 
 # 1. Overview
@@ -20,9 +20,9 @@ Hypervisor | VMware Workstation
 Server OS | Windows Server 2022 (evaluation)
 Hostname | AD-01
 Roles | AD DS, DNS
-Network adapter | VMnet10, bridged to the HQ server VLAN (10.10.50.0/24), same segment as HQ-CoreSW01
-Static IP | 10.10.50.50/24
-Default Gateway | 10.10.50.1
+Network adapter | VMnet10, bridged to the HQ Server VLAN (VLAN 20, 10.10.20.0/24), same segment as HQ-CoreSW01
+Static IP | 10.10.20.50/24
+Default Gateway | 10.10.20.1
 DNS | Points at itself (AD-01 hosts the zone)
 NetBox device | AD-01, listed under HQ
 Test client | Windows client on the HQ user VLAN (VLAN 10), 10.10.10.100/24, connected via VMnet2
@@ -38,7 +38,9 @@ Range | Purpose
 .150 – .199 | Reserved
 .200 – .254 | DHCP pool
 
-Clients sit on the user VLAN (10.10.10.0/24), not the server VLAN. Inter-VLAN routing between 10.10.10.0/24 and 10.10.50.0/24 is handled by SVIs on the HQ core switches (with HSRP, per Lab 06), so clients reach AD-01 through the core switches rather than sharing its subnet.
+Clients sit on the user VLAN (10.10.10.0/24), not the server VLAN. Inter-VLAN routing between 10.10.10.0/24 and 10.10.20.0/24 is handled by SVIs on the HQ core switches (with HSRP, per Lab 06), so clients reach AD-01 through the core switches rather than sharing its subnet.
+
+> **Update (October 1st, 2026):** AD-01 was moved from the Net-MGMT VLAN (`10.10.50.50`, gateway `10.10.50.1`) to the Server VLAN (`10.10.20.50`, gateway `10.10.20.1`), joining DHCP01, Provisioning, and SNMP Monitoring, so VLAN 50 carries only switch, router, and firewall management traffic. The configuration and commands in this README use the new address; the verification results in section 6 were recorded at the original `10.10.50.50` address. NetBox IPAM was updated to match.
 
 # 3. Objectives
 
@@ -64,8 +66,8 @@ The VM's adapter was moved off VMware's default NAT network onto VMnet10, which 
 
 ```powershell
 Get-NetAdapter
-New-NetIPAddress -InterfaceIndex <ifIndex> -IPAddress 10.10.50.50 -PrefixLength 24 -DefaultGateway 10.10.50.1
-Set-DnsClientServerAddress -InterfaceIndex <ifIndex> -ServerAddresses 10.10.50.50
+New-NetIPAddress -InterfaceIndex <ifIndex> -IPAddress 10.10.20.50 -PrefixLength 24 -DefaultGateway 10.10.20.1
+Set-DnsClientServerAddress -InterfaceIndex <ifIndex> -ServerAddresses 10.10.20.50
 ```
 
 ## 5.2 AD DS Installation and Promotion
@@ -154,7 +156,7 @@ nltest /sc_verify:corp.williamslabs.ca
 
 # Confirm the client can resolve and reach AD-01 across VLANs
 nslookup corp.williamslabs.ca
-Test-NetConnection 10.10.50.50 -Port 389   # LDAP
+Test-NetConnection 10.10.20.50 -Port 389   # LDAP
 
 # Confirm Group Policy is pulled from the domain
 gpupdate /force

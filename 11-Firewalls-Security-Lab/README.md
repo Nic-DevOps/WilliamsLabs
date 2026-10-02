@@ -146,7 +146,7 @@ CML passes a JSON day-0 config to the NGFWv node on first boot. The `IPv4*` fiel
     "Hostname": "HQ-Firewall01",
     "AdminPassword": "<ADMIN_PASSWORD>",
     "FirewallMode": "routed",
-    "DNS1": "10.10.50.50",
+    "DNS1": "10.10.20.50",
     "DNS2": "",
     "DNS3": "",
     "IPv4Mode": "manual",
@@ -168,10 +168,12 @@ Field | Value | Reason
 ---|---|---
 `Hostname` | HQ-Firewall01 | Matches the device naming used in NetBox and the OSPF tables
 `FirewallMode` | routed | The firewall is a Layer 3 OSPF hop, not transparent
-`DNS1` | 10.10.50.50 | AD-01 (Lab 10), the internal DNS server
+`DNS1` | 10.10.20.50 | AD-01 (Lab 10), the internal DNS server
 `IPv4Addr` / `IPv4Mask` | 10.10.50.40 / 255.255.255.0 | Firewall mgmt IP in HQ VLAN 50
 `IPv4Gw` | 10.10.50.1 | HQ VLAN 50 HSRP virtual gateway (core switches are .2/.3), so mgmt survives a core switch failure
 `ManageLocally` | Yes | Local FDM management
+
+> **Update (October 1st, 2026):** AD-01 moved from `10.10.50.50` to `10.10.20.50` (Server VLAN), so `DNS1` above now uses the new address. HQ-Firewall01 was originally bootstrapped with `10.10.50.50`; on the running firewall the DNS server is changed in FDM, since day-0 config only applies on first boot.
 
 The template's default `AdminPassword` is replaced with a unique password before first boot. The real password is kept out of this repo. This JSON format is specific to FTDv/NGFWv — the Site A/B ASAv builds are configured by CLI instead (see SSH Auth below).
 

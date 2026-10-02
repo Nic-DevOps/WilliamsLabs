@@ -40,7 +40,7 @@
     <p style="color:var(--text-dim); font-size:1.05rem; max-width:680px; margin-top:0.75rem;">Stand up a Windows Server 2022 domain controller with AD DS and DNS on the HQ server VLAN, join a client from a separate routed VLAN, and push user Group Policy to it end to end.</p>
     <div class="meta-row">
       <span><strong>Domain:</strong> corp.williamslabs.ca</span>
-      <span><strong>DC:</strong> AD-01, 10.10.50.50</span>
+      <span><strong>DC:</strong> AD-01, 10.10.20.50</span>
       <span><strong>Status:</strong> Complete</span>
     </div>
   </div>
@@ -60,13 +60,13 @@
 <tr><td>Hypervisor</td><td>VMware Workstation</td></tr>
 <tr><td>Server OS</td><td>Windows Server 2022 (evaluation)</td></tr>
 <tr><td>Roles</td><td>AD DS, DNS</td></tr>
-<tr><td>Server VLAN</td><td>10.10.50.0/24 via VMnet10 (bridged to HQ in CML)</td></tr>
-<tr><td>AD-01</td><td>10.10.50.50/24, gateway 10.10.50.1, DNS 10.10.50.50</td></tr>
+<tr><td>Server VLAN</td><td>VLAN 20, 10.10.20.0/24 via VMnet10 (bridged to HQ in CML)</td></tr>
+<tr><td>AD-01</td><td>10.10.20.50/24, gateway 10.10.20.1, DNS 10.10.20.50</td></tr>
 <tr><td>Test client</td><td>User VLAN 10, 10.10.10.100/24 via VMnet2</td></tr>
 <tr><td>NetBox</td><td>AD-01, listed under HQ</td></tr>
 </tbody>
 </table>
-<p>The client and the DC sit on different subnets on purpose. Traffic between 10.10.10.0/24 and 10.10.50.0/24 is routed by SVIs on the HQ core switches (HSRP from Lab 05/06), the same path any real workstation would take to reach a domain controller.</p>
+<p>The client and the DC sit on different subnets on purpose. Traffic between 10.10.10.0/24 and 10.10.20.0/24 is routed by SVIs on the HQ core switches (HSRP from Lab 05/06), the same path any real workstation would take to reach a domain controller.</p>
 
 <h2>Promoting the domain controller</h2>
 <p>The AD DS role is installed from Server Manager, then the server is promoted to a new forest with integrated DNS. The PowerShell equivalent:</p>
