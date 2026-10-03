@@ -3,8 +3,8 @@
 **Project Name:** 11-Firewalls-Security-Lab  
 **Author:** Nicholas Williams  
 **Date Created:** September 22nd, 2026  
-**Last Updated:** September 28th, 2026  
-**Status:** In Progress — HQ firewall (FTDv) build complete (OSPF, baseline connectivity, SSH mgmt); Site A/Site B redesigned to use ASAv instead of FTDv (CML resource constraints); Site A/B builds not started; real access policy at HQ still pending
+**Last Updated:** October 2nd, 2026  
+**Status:** In Progress — HQ firewall (FTDv) build complete (OSPF, baseline connectivity, SSH mgmt); Site A/Site B redesigned to use ASAv instead of FTDv (CML resource constraints); Site A ASAv build started (mgmt interface up, SSH confirmed); Site B build not started; real access policy at HQ still pending
 
 ---
 
@@ -127,7 +127,7 @@ Reuses Lab 9's existing per-site **Net-Mgmt VLAN (VLAN 50)**, already used for S
 | Site | Net-Mgmt Subnet | Firewall Mgmt IP | Platform |
 |---|---|---|---|
 | HQ | `10.10.50.0/24` | `10.10.50.40` ✅ live, SSH confirmed working | FTDv |
-| Site A | `10.20.50.0/24` | `10.20.50.40` (planned) | ASAv |
+| Site A | `10.20.50.0/24` | `10.20.50.40` ✅ live, SSH confirmed working | ASAv |
 | Site B | `10.30.50.0/24` | `10.30.50.40` (planned) | ASAv |
 
 VLAN 50 carries no DHCP scope — fully static, so addresses are assigned by hand. At HQ, `.1` in VLAN 50 is the HSRP virtual gateway, `.2`/`.3` are the core switches, and `.10`–`.49` is the network-device range (per Lab 10). `.20`, `.22`, and `.25` were originally used by the Provisioning VM, DHCP01, and the SNMP Monitoring VM at HQ, so HQ-Firewall01 takes `.40`, and `.40` is the standard firewall mgmt address at Site A and Site B as well. Each site's full `/16` (including VLAN 50) is already advertised into OSPF as a single summary network statement, so mgmt traffic is routable across the whole multi-site domain with no new mgmt network or special reachability path required.
@@ -227,14 +227,14 @@ crypto key generate rsa modulus 2048
 11. **SSH to the firewall's own management interface confirmed working** — `10.10.50.40`, default `admin` account, no extra config needed (FTD allows SSH to Mgmt0/0 by default from any source, unlike IOS's require-explicit-config approach).
 12. **Design change (2026-09-28)**: Realized CML cannot run three FTDv instances simultaneously (4 vCPU/8GB minimum each). Decided to keep FTDv at HQ and switch Site A/Site B to **ASAv** instead — see Section 3a for full rationale and platform comparison.
 
-**Current state**: HQ firewall is fully inline, OSPF-adjacent on all links, old bypass paths removed, baseline connectivity (ping/SSH) confirmed working through the firewall under the temporary allow-all rule, and SSH management access to the firewall itself confirmed working. **Not yet done at HQ**: full inter-site (Site A/B) connectivity retest, and replacing the temporary rule with real policy. **Site A/Site B**: not yet started, now planned as ASAv builds.
+**Current state**: HQ firewall is fully inline, OSPF-adjacent on all links, old bypass paths removed, baseline connectivity (ping/SSH) confirmed working through the firewall under the temporary allow-all rule, and SSH management access to the firewall itself confirmed working. **Not yet done at HQ**: full inter-site (Site A/B) connectivity retest, and replacing the temporary rule with real policy. **Site A**: ASAv build started — Management0/0 is up on `10.20.50.40` in Site A VLAN 50 and SSH to it is confirmed working; data interfaces and OSPF not yet configured. **Site B**: not yet started, planned as an ASAv build.
 
 ---
 
 # 7. Planned Build Order (status)
 
-1. Cabling — **HQ: done.** Site A/B: not started.
-2. Firewall mgmt access (console → static mgmt IP → SSH) — **HQ: done.** Site A/B: not started (ASAv CLI-based SSH setup, see Section 4).
+1. Cabling — **HQ: done.** Site A: mgmt link done. Site B: not started.
+2. Firewall mgmt access (console → static mgmt IP → SSH) — **HQ: done. Site A: done** (`10.20.50.40`). Site B: not started (ASAv CLI-based SSH setup, see Section 4).
 3. Firewall interface configuration — **HQ: done** (FDM). Site A/B: not started (ASAv `nameif`/`security-level` CLI, see Section 3a).
 4. OSPF on firewall-facing links (switches/router + firewall) — **HQ: done, verified FULL.** Site A/B: not started (ASAv direct CLI, see Section 3 OSPF notes).
 5. Verify OSPF neighbors FULL before any policy — **HQ: done.** Site A/B: pending build.
