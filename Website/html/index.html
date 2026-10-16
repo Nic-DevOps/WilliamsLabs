@@ -656,11 +656,21 @@
 
 <section id="monitoring">
   <div class="wrap">
-    <h2 class="section-title">Live Status</h2>
-    <p class="section-desc">Pulled straight from the Prometheus/Grafana monitoring stack running on the homelab, exposed through a Cloudflare Tunnel. If the tunnel or the monitoring VM is offline, this panel says so rather than showing stale data.</p>
-    <div class="status-widget" data-status-widget data-status-url="https://status.williamslabs.ca/api/status" id="status-widget">
-      <div class="status-widget-head"><h3>Infrastructure Status</h3></div>
-      <div class="status-banner">Connecting to status feed&hellip;</div>
+    <h2 class="section-title">Monitoring</h2>
+    <p class="section-desc">Uptime of the DigitalOcean droplet hosting this site, checked every 60 seconds by a self-hosted Uptime Kuma instance. If the status page can&rsquo;t be reached, this panel hides itself rather than showing broken data.</p>
+    <div class="uptime-panel" id="uptime-panel">
+      <div class="uptime-head">
+        <h3>Droplet Uptime</h3>
+        <a href="https://status.williamslabs.ca/status/status" target="_blank" rel="noopener">Status page &rarr;</a>
+      </div>
+      <div class="uptime-row">
+        <span class="uptime-name">williamslabs.ca &middot; DigitalOcean droplet</span>
+        <span class="uptime-badges">
+          <img data-uptime-badge src="https://status.williamslabs.ca/api/badge/1/status" alt="Droplet status" loading="lazy">
+          <img data-uptime-badge src="https://status.williamslabs.ca/api/badge/1/uptime/24?label=24h" alt="Droplet uptime, last 24 hours" loading="lazy">
+          <img data-uptime-badge src="https://status.williamslabs.ca/api/badge/1/uptime/720?label=30d" alt="Droplet uptime, last 30 days" loading="lazy">
+        </span>
+      </div>
     </div>
   </div>
 </section>
@@ -813,7 +823,7 @@
   Williams Labs &middot; Infrastructure Lab
 </footer>
 
-<script src="js/status.js"></script>
+<script src="js/uptime.js"></script>
 <script src="js/network-bg.js"></script>
 </body>
 </html>

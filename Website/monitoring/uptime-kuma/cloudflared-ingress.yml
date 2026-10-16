@@ -1,0 +1,15 @@
+# Add this hostname block to the existing cloudflared config.yml on the
+# monitoring VM, ABOVE the final catch-all `service: http_status:404` rule.
+#
+# Only the public status page, its data API, badges and static assets are
+# reachable. The admin login/dashboard and socket.io are NOT matched, so they
+# 404 from the internet and are only available over Tailscale.
+#
+# Also create the DNS route:  cloudflared tunnel route dns <tunnel> status.williamslabs.ca
+ingress:
+  - hostname: status.williamslabs.ca
+    path: ^/(status/|api/status-page/|api/badge/|assets/|icon\.svg$|upload/)
+    service: http://localhost:3001
+  - hostname: status.williamslabs.ca
+    service: http_status:404
+  - service: http_status:404

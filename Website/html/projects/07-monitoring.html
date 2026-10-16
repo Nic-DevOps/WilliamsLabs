@@ -51,7 +51,7 @@
     <div class="prose">
 
 <h2>Overview</h2>
-<p>This is the monitoring backbone the live status widget on this site is built on. A Debian 13 VM in the NET-MGMT VLAN runs Prometheus, the SNMP Exporter, and Grafana, polling every core switch, access switch and router in the HQ network over SNMPv2c.</p>
+<p>This is the monitoring backbone for the lab network. A Debian 13 VM in the NET-MGMT VLAN runs Prometheus, the SNMP Exporter, and Grafana, polling every core switch, access switch and router in the HQ network over SNMPv2c.</p>
 
 <h2>Data flow</h2>
 <p><strong>Cisco devices</strong> (SNMPv2c, community <code>monitoring</code>) &rarr; <strong>SNMP Exporter</strong> (port 9116) &rarr; <strong>Prometheus</strong> (port 9090) &rarr; <strong>Grafana</strong> (port 3000)</p>
@@ -92,7 +92,7 @@ snmp-server community &lt;community-string&gt; RO</pre>
 <p>Shutting down HQ-Router01 in CML was correctly detected by Prometheus as an SNMP timeout, and the target flipped to <strong>down</strong> within one scrape interval.</p>
 
 <h2>What's next</h2>
-<p>This stack is what feeds the status API and the live widget on this site (see the <a href="homelab-monitoring.html">Monitoring VM &amp; Ansible</a> project). Lab 09 extends monitoring targets to Site A and Site B.</p>
+<p>The VM itself is documented in the <a href="homelab-monitoring.html">Monitoring VM &amp; Ansible</a> project. Lab 09 extends monitoring targets to Site A and Site B.</p>
 
     </div>
 
