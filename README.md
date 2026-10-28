@@ -19,6 +19,9 @@ A collection of networking projects focused on building, configuring, and troubl
 - [x] [09-Network-Services](https://github.com/Nic-DevOps/WilliamsLabs/blob/main/09-Network-Services/README.md)
 - [x] [10-Active-Directory-Lab](https://github.com/Nic-DevOps/WilliamsLabs/blob/main/10-Active-Directory-Lab/README.md)
 
+## Additional Labs
+- [x] [Network Fundamentals Lab](https://github.com/Nic-DevOps/WilliamsLabs/blob/main/Network-Fundamentals-Lab/README.md)
+
 ## Planned Projects
 
 - [ ] [11-Firewalls-Security-Lab](https://github.com/Nic-DevOps/WilliamsLabs/blob/main/11-Firewalls-Security-Lab/README.md) (in progress)

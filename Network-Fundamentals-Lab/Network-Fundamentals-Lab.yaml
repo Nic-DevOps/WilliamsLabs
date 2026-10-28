@@ -1,0 +1,2015 @@
+annotations: []
+smart_annotations: []
+nodes:
+  - boot_disk_size: null
+    configuration:
+      - name: ios_config.txt
+        content: |-
+          hostname ISP
+          !
+          ip cef
+          ipv6 unicast-routing
+          ipv6 cef
+          !
+          interface Loopback0
+           ip address 1.1.1.1 255.255.255.255
+           ipv6 address 2001:DB8::1:1:1:1/128
+          !
+          interface GigabitEthernet0/0
+           ip address 172.16.1.2 255.255.255.252
+           duplex auto
+           speed auto
+           media-type rj45
+           ipv6 address 2001:DB8:0:131::1F/127
+           ipv6 enable
+          !
+          ip http server
+          !
+          ipv6 route ::/0 2001:DB8:0:131::1E
+          !
+          ntp master 1
+          !
+          end
+    cpu_limit: null
+    cpus: null
+    data_volume: null
+    hide_links: false
+    id: n0
+    image_definition: null
+    label: ISP
+    node_definition: iosv
+    parameters: {}
+    priority: null
+    pyats:
+      username: null
+      password: null
+      enable_password: null
+    ram: null
+    tags: []
+    x: 560
+    y: -160
+    interfaces:
+      - id: i0
+        label: Loopback0
+        mac_address: null
+        type: loopback
+      - id: i1
+        label: GigabitEthernet0/0
+        mac_address: null
+        type: physical
+        slot: 0
+      - id: i2
+        label: GigabitEthernet0/1
+        mac_address: null
+        type: physical
+        slot: 1
+      - id: i3
+        label: GigabitEthernet0/2
+        mac_address: null
+        type: physical
+        slot: 2
+      - id: i4
+        label: GigabitEthernet0/3
+        mac_address: null
+        type: physical
+        slot: 3
+  - boot_disk_size: null
+    configuration:
+      - name: ios_config.txt
+        content: |-
+          Building configuration...
+
+          Current configuration : 3842 bytes
+          !
+          ! Last configuration change at 00:11:29 UTC Wed Oct 28 2026 by admin
+          !
+          version 15.9
+          service timestamps debug datetime msec
+          service timestamps log datetime msec
+          no service password-encryption
+          !
+          hostname R1
+          !
+          boot-start-marker
+          boot-end-marker
+          !
+          !
+          no logging console
+          !
+          no aaa new-model
+          !
+          !
+          !
+          mmi polling-interval 60
+          no mmi auto-configure
+          no mmi pvc
+          mmi snmp-timeout 180
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          ip dhcp pool vlan10
+           network 10.0.0.0 255.255.255.128
+           default-router 10.0.0.3
+           dns-server 1.1.1.1
+           domain-name MYDOMAIN.LOCAL
+           lease 2
+          !
+          ip dhcp pool vlan20
+           network 10.0.0.128 255.255.255.192
+           default-router 10.0.0.129
+           option 150 ip 10.0.0.135
+          !
+          !
+          !
+          no ip domain lookup
+          ip cef
+          ipv6 unicast-routing
+          ipv6 cef
+          !
+          multilink bundle-name authenticated
+          !
+          !
+          !
+          !
+          username admin secret 9 $9$CmFYkUgYA3sfvP$fihk4Oj1SkaeYfvZW3YkknZiqIRXMhmTINS7SbTS/qc
+          !
+          redundancy
+          !
+          lldp run
+          cdp timer 5
+          cdp holdtime 60
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          interface Loopback1
+           ip address 10.0.255.1 255.255.255.255
+           ip ospf 1 area 0
+           ipv6 address 2001:DB8:0:255::1/128
+          !
+          interface GigabitEthernet0/0
+           description Link to CSW1
+           ip address 10.0.250.2 255.255.255.252
+           ip nat inside
+           ip virtual-reassembly in
+           ip ospf dead-interval 15
+           ip ospf hello-interval 5
+           ip ospf 1 area 0
+           duplex auto
+           speed auto
+           media-type rj45
+           no cdp enable
+           ipv6 enable
+           ipv6 ospf 1 area 0
+          !
+          interface GigabitEthernet0/1
+           description Link to CSW2
+           ip address 10.0.250.14 255.255.255.252
+           ip nat inside
+           ip virtual-reassembly in
+           ip ospf dead-interval 15
+           ip ospf hello-interval 5
+           ip ospf 1 area 0
+           duplex auto
+           speed auto
+           media-type rj45
+           ipv6 enable
+           ipv6 ospf 1 area 0
+          !
+          interface GigabitEthernet0/2
+           description Link to ISP
+           ip address 172.16.1.1 255.255.255.252
+           ip nat outside
+           ip virtual-reassembly in
+           duplex auto
+           speed auto
+           media-type rj45
+           ipv6 address 2001:DB8:0:250::/127
+          !
+          interface GigabitEthernet0/3
+           no ip address
+           shutdown
+           duplex auto
+           speed auto
+           media-type rj45
+          !
+          router ospf 1
+           router-id 10.0.255.1
+           default-information originate
+          !
+          ip forward-protocol nd
+          !
+          !
+          no ip http server
+          no ip http secure-server
+          ip nat inside source list NAT interface GigabitEthernet0/2 overload
+          ip route 0.0.0.0 0.0.0.0 172.16.1.2
+          !
+          ip access-list standard NAT
+           permit 10.0.0.0 0.255.255.255
+          !
+          ipv6 route ::/0 2001:DB8:0:250::1
+          ipv6 router ospf 1
+           router-id 10.0.255.1
+           default-information originate
+          !
+          ipv6 ioam timestamp
+          !
+          !
+          !
+          control-plane
+          !
+          banner exec ^C
+          **************************************************************************
+          * IOSv is strictly limited to use for evaluation, demonstration and IOS  *
+          * education. IOSv is provided as-is and is not supported by Cisco's      *
+          * Technical Advisory Center. Any use or disclosure, in whole or in part, *
+          * of the IOSv Software or Documentation to any third party for any       *
+          * purposes is expressly prohibited except as otherwise authorized by     *
+          * Cisco in writing.                                                      *
+          **************************************************************************^C
+          banner incoming ^C
+          **************************************************************************
+          * IOSv is strictly limited to use for evaluation, demonstration and IOS  *
+          * education. IOSv is provided as-is and is not supported by Cisco's      *
+          * Technical Advisory Center. Any use or disclosure, in whole or in part, *
+          * of the IOSv Software or Documentation to any third party for any       *
+          * purposes is expressly prohibited except as otherwise authorized by     *
+          * Cisco in writing.                                                      *
+          **************************************************************************^C
+          banner login ^C Authorized users only ^C
+          !
+          line con 0
+           exec-timeout 0 0
+           logging synchronous
+           login local
+          line aux 0
+          line vty 0 4
+           exec-timeout 0 0
+           login local
+           transport input none
+          !
+          no scheduler allocate
+          ntp server 1.1.1.1
+          !
+          end
+    cpu_limit: null
+    cpus: null
+    data_volume: null
+    hide_links: false
+    id: n1
+    image_definition: null
+    label: R1
+    node_definition: iosv
+    parameters: {}
+    priority: null
+    pyats:
+      username: null
+      password: null
+      enable_password: null
+    ram: null
+    tags: []
+    x: 200
+    y: -160
+    interfaces:
+      - id: i0
+        label: Loopback0
+        mac_address: null
+        type: loopback
+      - id: i1
+        label: GigabitEthernet0/0
+        mac_address: null
+        type: physical
+        slot: 0
+      - id: i2
+        label: GigabitEthernet0/1
+        mac_address: null
+        type: physical
+        slot: 1
+      - id: i3
+        label: GigabitEthernet0/2
+        mac_address: null
+        type: physical
+        slot: 2
+      - id: i4
+        label: GigabitEthernet0/3
+        mac_address: null
+        type: physical
+        slot: 3
+  - boot_disk_size: null
+    configuration:
+      - name: ios_config.txt
+        content: |-
+          Building configuration...
+
+          Current configuration : 4302 bytes
+          !
+          ! Last configuration change at 00:09:17 UTC Wed Oct 28 2026
+          !
+          version 15.2
+          service timestamps debug datetime msec
+          service timestamps log datetime msec
+          service password-encryption
+          service compress-config
+          !
+          hostname CSW1
+          !
+          boot-start-marker
+          boot-end-marker
+          !
+          !
+          no logging console
+          enable secret 5 $1$5N8F$JSAAazx59129/6E2xKs2C.
+          !
+          username cisco privilege 15 secret 5 $1$BS4L$w85MVYgDjR5X4xuBpY21/0
+          no aaa new-model
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          no ip domain-lookup
+          ip domain-name MYDOMAIN.LOCAL
+          ip cef
+          ipv6 unicast-routing
+          ipv6 cef
+          !
+          !
+          !
+          spanning-tree mode rapid-pvst
+          spanning-tree extend system-id
+          !
+          lldp run
+          cdp timer 5
+          cdp holdtime 60
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          interface Loopback1
+           ip address 10.0.255.2 255.255.255.255
+           ip ospf 1 area 0
+           ipv6 address 2001:DB8:0:255::2/128
+           ipv6 ospf 1 area 0
+          !
+          interface Port-channel1
+           no switchport
+           ip address 10.0.250.9 255.255.255.252
+           ip ospf network point-to-point
+           ip ospf dead-interval 15
+           ip ospf hello-interval 5
+           ip ospf 1 area 0
+           ipv6 address FE80::1 link-local
+           ipv6 enable
+           ipv6 ospf 1 area 0
+           ipv6 ospf network point-to-point
+          !
+          interface GigabitEthernet0/0
+           description Link to CSW2
+           no switchport
+           no ip address
+           negotiation auto
+           channel-group 1 mode on
+          !
+          interface GigabitEthernet0/1
+           description Link to CSW2
+           no switchport
+           no ip address
+           negotiation auto
+           channel-group 1 mode on
+          !
+          interface GigabitEthernet0/2
+           description Link to DSW1
+           no switchport
+           ip address 10.0.250.5 255.255.255.252
+           ip ospf dead-interval 15
+           ip ospf hello-interval 5
+           ip ospf 1 area 0
+           negotiation auto
+           ipv6 enable
+           ipv6 ospf 1 area 0
+          !
+          interface GigabitEthernet0/3
+           description Link to DSW2
+           no switchport
+           ip address 10.0.250.25 255.255.255.252
+           ip ospf dead-interval 15
+           ip ospf hello-interval 5
+           ip ospf 1 area 0
+           negotiation auto
+           ipv6 enable
+           ipv6 ospf 1 area 0
+          !
+          interface GigabitEthernet1/0
+           description Link to R1
+           no switchport
+           ip address 10.0.250.1 255.255.255.252
+           ip ospf dead-interval 15
+           ip ospf hello-interval 5
+           ip ospf 1 area 0
+           negotiation auto
+           ipv6 enable
+           ipv6 ospf 1 area 0
+          !
+          router ospf 1
+           router-id 10.0.255.2
+          !
+          ip forward-protocol nd
+          !
+          ip http server
+          ip http secure-server
+          !
+          ip ssh version 2
+          ip ssh server algorithm encryption aes128-ctr aes192-ctr aes256-ctr
+          ip ssh client algorithm encryption aes128-ctr aes192-ctr aes256-ctr
+          !
+          !
+          ipv6 router ospf 1
+           router-id 10.0.255.2
+          !
+          !
+          !
+          !
+          !
+          control-plane
+          !
+          banner exec ^C
+          IOSv - Cisco Systems Confidential -
+
+          Supplemental End User License Restrictions
+
+          This IOSv software is provided AS-IS without warranty of any kind. Under no circumstances may this software be used separate from the Cisco Modeling Labs Software that this software was provided with, or deployed or used as part of a production environment.
+
+          By using the software, you agree to abide by the terms and conditions of the Cisco End User License Agreement at http://www.cisco.com/go/eula. Unauthorized use or distribution of this software is expressly prohibited.
+          ^C
+          banner incoming ^C
+          IOSv - Cisco Systems Confidential -
+
+          Supplemental End User License Restrictions
+
+          This IOSv software is provided AS-IS without warranty of any kind. Under no circumstances may this software be used separate from the Cisco Modeling Labs Software that this software was provided with, or deployed or used as part of a production environment.
+
+          By using the software, you agree to abide by the terms and conditions of the Cisco End User License Agreement at http://www.cisco.com/go/eula. Unauthorized use or distribution of this software is expressly prohibited.
+          ^C
+          banner login ^C
+          IOSv - Cisco Systems Confidential -
+
+          Supplemental End User License Restrictions
+
+          This IOSv software is provided AS-IS without warranty of any kind. Under no circumstances may this software be used separate from the Cisco Modeling Labs Software that this software was provided with, or deployed or used as part of a production environment.
+
+          By using the software, you agree to abide by the terms and conditions of the Cisco End User License Agreement at http://www.cisco.com/go/eula. Unauthorized use or distribution of this software is expressly prohibited.
+          ^C
+          banner motd ^CThis is CSW1^C
+          !
+          line con 0
+           exec-timeout 0 0
+           logging synchronous
+          line aux 0
+          line vty 0 4
+           exec-timeout 0 0
+           login local
+           transport input ssh
+          !
+          ntp source GigabitEthernet1/0
+          ntp server 10.0.255.1
+          !
+          end
+    cpu_limit: null
+    cpus: null
+    data_volume: null
+    hide_links: false
+    id: n2
+    image_definition: null
+    label: CSW1
+    node_definition: iosvl2
+    parameters: {}
+    priority: null
+    pyats:
+      username: null
+      password: null
+      enable_password: null
+    ram: null
+    tags: []
+    x: 40
+    y: -40
+    interfaces:
+      - id: i0
+        label: Loopback0
+        mac_address: null
+        type: loopback
+      - id: i1
+        label: GigabitEthernet0/0
+        mac_address: null
+        type: physical
+        slot: 0
+      - id: i2
+        label: GigabitEthernet0/1
+        mac_address: null
+        type: physical
+        slot: 1
+      - id: i3
+        label: GigabitEthernet0/2
+        mac_address: null
+        type: physical
+        slot: 2
+      - id: i4
+        label: GigabitEthernet0/3
+        mac_address: null
+        type: physical
+        slot: 3
+      - id: i5
+        label: GigabitEthernet1/0
+        mac_address: null
+        type: physical
+        slot: 4
+  - boot_disk_size: null
+    configuration:
+      - name: ios_config.txt
+        content: |-
+          Building configuration...
+
+          Current configuration : 4083 bytes
+          !
+          ! Last configuration change at 00:09:14 UTC Wed Oct 28 2026
+          !
+          version 15.2
+          service timestamps debug datetime msec
+          service timestamps log datetime msec
+          no service password-encryption
+          service compress-config
+          !
+          hostname CSW2
+          !
+          boot-start-marker
+          boot-end-marker
+          !
+          !
+          no logging console
+          !
+          no aaa new-model
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          no ip domain-lookup
+          ip cef
+          ipv6 unicast-routing
+          ipv6 cef
+          !
+          !
+          !
+          spanning-tree mode rapid-pvst
+          spanning-tree extend system-id
+          !
+          cdp timer 5
+          cdp holdtime 60
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          interface Loopback1
+           ip address 10.0.255.3 255.255.255.255
+           ip ospf 1 area 0
+           ipv6 address 2001:DB8:0:255::3/128
+           ipv6 ospf 1 area 0
+          !
+          interface Port-channel1
+           no switchport
+           ip address 10.0.250.10 255.255.255.252
+           ip ospf network point-to-point
+           ip ospf dead-interval 15
+           ip ospf hello-interval 5
+           ip ospf 1 area 0
+           ipv6 address FE80::2 link-local
+           ipv6 enable
+           ipv6 ospf 1 area 0
+           ipv6 ospf network point-to-point
+          !
+          interface GigabitEthernet0/0
+           description Link to CSW1
+           no switchport
+           no ip address
+           negotiation auto
+           channel-group 1 mode on
+          !
+          interface GigabitEthernet0/1
+           description Link to CSW1
+           no switchport
+           no ip address
+           negotiation auto
+           channel-group 1 mode on
+          !
+          interface GigabitEthernet0/2
+           description Link to DSW2
+           no switchport
+           ip address 10.0.250.29 255.255.255.252
+           ip ospf dead-interval 15
+           ip ospf hello-interval 5
+           ip ospf 1 area 0
+           negotiation auto
+           ipv6 enable
+           ipv6 ospf 1 area 0
+          !
+          interface GigabitEthernet0/3
+           description Link to DSW1
+           no switchport
+           ip address 10.0.250.17 255.255.255.252
+           ip ospf dead-interval 15
+           ip ospf hello-interval 5
+           ip ospf 1 area 0
+           negotiation auto
+           ipv6 enable
+           ipv6 ospf 1 area 0
+          !
+          interface GigabitEthernet1/0
+           description Link to R1
+           no switchport
+           ip address 10.0.250.13 255.255.255.252
+           ip ospf dead-interval 15
+           ip ospf hello-interval 5
+           ip ospf 1 area 0
+           negotiation auto
+           ipv6 enable
+           ipv6 ospf 1 area 0
+          !
+          router ospf 1
+           router-id 10.0.255.3
+          !
+          ip forward-protocol nd
+          !
+          ip http server
+          ip http secure-server
+          !
+          ip ssh server algorithm encryption aes128-ctr aes192-ctr aes256-ctr
+          ip ssh client algorithm encryption aes128-ctr aes192-ctr aes256-ctr
+          !
+          !
+          ipv6 router ospf 1
+           router-id 10.0.255.3
+          !
+          !
+          !
+          !
+          !
+          control-plane
+          !
+          banner exec ^C
+          IOSv - Cisco Systems Confidential -
+
+          Supplemental End User License Restrictions
+
+          This IOSv software is provided AS-IS without warranty of any kind. Under no circumstances may this software be used separate from the Cisco Modeling Labs Software that this software was provided with, or deployed or used as part of a production environment.
+
+          By using the software, you agree to abide by the terms and conditions of the Cisco End User License Agreement at http://www.cisco.com/go/eula. Unauthorized use or distribution of this software is expressly prohibited.
+          ^C
+          banner incoming ^C
+          IOSv - Cisco Systems Confidential -
+
+          Supplemental End User License Restrictions
+
+          This IOSv software is provided AS-IS without warranty of any kind. Under no circumstances may this software be used separate from the Cisco Modeling Labs Software that this software was provided with, or deployed or used as part of a production environment.
+
+          By using the software, you agree to abide by the terms and conditions of the Cisco End User License Agreement at http://www.cisco.com/go/eula. Unauthorized use or distribution of this software is expressly prohibited.
+          ^C
+          banner login ^C
+          IOSv - Cisco Systems Confidential -
+
+          Supplemental End User License Restrictions
+
+          This IOSv software is provided AS-IS without warranty of any kind. Under no circumstances may this software be used separate from the Cisco Modeling Labs Software that this software was provided with, or deployed or used as part of a production environment.
+
+          By using the software, you agree to abide by the terms and conditions of the Cisco End User License Agreement at http://www.cisco.com/go/eula. Unauthorized use or distribution of this software is expressly prohibited.
+          ^C
+          !
+          line con 0
+           exec-timeout 0 0
+           logging synchronous
+          line aux 0
+          line vty 0 4
+           exec-timeout 0 0
+           login
+          !
+          ntp source GigabitEthernet1/0
+          ntp server 10.0.255.1
+          !
+          end
+    cpu_limit: null
+    cpus: null
+    data_volume: null
+    hide_links: false
+    id: n3
+    image_definition: null
+    label: CSW2
+    node_definition: iosvl2
+    parameters: {}
+    priority: null
+    pyats:
+      username: null
+      password: null
+      enable_password: null
+    ram: null
+    tags: []
+    x: 320
+    y: -40
+    interfaces:
+      - id: i0
+        label: Loopback0
+        mac_address: null
+        type: loopback
+      - id: i1
+        label: GigabitEthernet0/0
+        mac_address: null
+        type: physical
+        slot: 0
+      - id: i2
+        label: GigabitEthernet0/1
+        mac_address: null
+        type: physical
+        slot: 1
+      - id: i3
+        label: GigabitEthernet0/2
+        mac_address: null
+        type: physical
+        slot: 2
+      - id: i4
+        label: GigabitEthernet0/3
+        mac_address: null
+        type: physical
+        slot: 3
+      - id: i5
+        label: GigabitEthernet1/0
+        mac_address: null
+        type: physical
+        slot: 4
+  - boot_disk_size: null
+    configuration:
+      - name: ios_config.txt
+        content: |-
+          Building configuration...
+
+          Current configuration : 5299 bytes
+          !
+          ! Last configuration change at 00:10:18 UTC Wed Oct 28 2026
+          !
+          version 15.2
+          service timestamps debug datetime msec
+          service timestamps log datetime msec
+          no service password-encryption
+          service compress-config
+          !
+          hostname DSW1
+          !
+          boot-start-marker
+          boot-end-marker
+          !
+          !
+          no logging console
+          !
+          no aaa new-model
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          no ip domain-lookup
+          ip cef
+          ipv6 unicast-routing
+          ipv6 cef
+          !
+          !
+          !
+          spanning-tree mode rapid-pvst
+          spanning-tree extend system-id
+          spanning-tree vlan 1,10,20,30,40 priority 0
+          spanning-tree vlan 10,20,30,40 hello-time 3
+          spanning-tree vlan 10,20,30,40 forward-time 10
+          !
+          lldp run
+          cdp timer 5
+          cdp holdtime 60
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          interface Loopback1
+           ip address 10.0.255.4 255.255.255.255
+           ip ospf 1 area 0
+           ipv6 address 2001:DB8:0:255::4/128
+           ipv6 ospf 1 area 0
+          !
+          interface Port-channel1
+           switchport trunk encapsulation dot1q
+           switchport mode trunk
+          !
+          interface GigabitEthernet0/0
+           description Link to CSW1
+           no switchport
+           ip address 10.0.250.6 255.255.255.252
+           ip ospf dead-interval 15
+           ip ospf hello-interval 5
+           ip ospf 1 area 0
+           negotiation auto
+           ipv6 enable
+           ipv6 ospf 1 area 0
+          !
+          interface GigabitEthernet0/1
+           description Link to CSW2
+           no switchport
+           ip address 10.0.250.18 255.255.255.252
+           ip ospf dead-interval 15
+           ip ospf hello-interval 5
+           ip ospf 1 area 0
+           negotiation auto
+           ipv6 enable
+           ipv6 ospf 1 area 0
+          !
+          interface GigabitEthernet0/2
+           description Link to DSW2
+           switchport trunk encapsulation dot1q
+           switchport mode trunk
+           negotiation auto
+           channel-group 1 mode active
+          !
+          interface GigabitEthernet0/3
+           description Link to DSW2
+           switchport trunk encapsulation dot1q
+           switchport mode trunk
+           negotiation auto
+           channel-group 1 mode active
+          !
+          interface GigabitEthernet1/0
+           description Link to ASW1
+           switchport trunk encapsulation dot1q
+           switchport mode trunk
+           negotiation auto
+          !
+          interface GigabitEthernet1/1
+           description Link to ASW2
+           switchport trunk encapsulation dot1q
+           switchport mode trunk
+           negotiation auto
+          !
+          interface Vlan10
+           ip address 10.0.0.1 255.255.255.128
+           ip access-group BLOCK-V10-HTTP in
+           ip helper-address 10.0.250.2
+           standby version 2
+           standby 1 ip 10.0.0.3
+           standby 1 priority 110
+           standby 1 preempt
+           ip ospf dead-interval 15
+           ip ospf hello-interval 5
+           ip ospf 1 area 0
+           ipv6 address 2001:DB8:0:10::1/64
+           ipv6 ospf 1 area 0
+          !
+          interface Vlan20
+           ip address 10.0.0.129 255.255.255.192
+           ip ospf dead-interval 15
+           ip ospf hello-interval 5
+           ip ospf 1 area 0
+           ipv6 address 2001:DB8:0:20::1/64
+           ipv6 ospf 1 area 0
+          !
+          interface Vlan30
+           ip address 10.0.0.193 255.255.255.240
+           ip ospf dead-interval 15
+           ip ospf hello-interval 5
+           ip ospf 1 area 0
+           ipv6 address 2001:DB8:0:30::1/64
+           ipv6 ospf 1 area 0
+          !
+          interface Vlan40
+           ip address 10.0.0.209 255.255.255.248
+           ip ospf dead-interval 15
+           ip ospf hello-interval 5
+           ip ospf 1 area 0
+           ipv6 address 2001:DB8:0:40::1/64
+           ipv6 ospf 1 area 0
+          !
+          router ospf 1
+           router-id 10.0.255.4
+           passive-interface Vlan10
+           passive-interface Vlan20
+           passive-interface Vlan30
+          !
+          ip forward-protocol nd
+          !
+          ip http server
+          ip http secure-server
+          !
+          ip ssh server algorithm encryption aes128-ctr aes192-ctr aes256-ctr
+          ip ssh client algorithm encryption aes128-ctr aes192-ctr aes256-ctr
+          !
+          ip access-list extended BLOCK-V10-HTTP
+           deny   tcp 10.0.0.0 0.0.0.127 host 1.1.1.1 eq www
+           permit ip any any
+          !
+          logging host 10.0.0.240
+          ipv6 router ospf 1
+           router-id 10.0.255.4
+           passive-interface Vlan10
+           passive-interface Vlan20
+           passive-interface Vlan30
+          !
+          !
+          !
+          !
+          !
+          control-plane
+          !
+          banner exec ^C
+          IOSv - Cisco Systems Confidential -
+
+          Supplemental End User License Restrictions
+
+          This IOSv software is provided AS-IS without warranty of any kind. Under no circumstances may this software be used separate from the Cisco Modeling Labs Software that this software was provided with, or deployed or used as part of a production environment.
+
+          By using the software, you agree to abide by the terms and conditions of the Cisco End User License Agreement at http://www.cisco.com/go/eula. Unauthorized use or distribution of this software is expressly prohibited.
+          ^C
+          banner incoming ^C
+          IOSv - Cisco Systems Confidential -
+
+          Supplemental End User License Restrictions
+
+          This IOSv software is provided AS-IS without warranty of any kind. Under no circumstances may this software be used separate from the Cisco Modeling Labs Software that this software was provided with, or deployed or used as part of a production environment.
+
+          By using the software, you agree to abide by the terms and conditions of the Cisco End User License Agreement at http://www.cisco.com/go/eula. Unauthorized use or distribution of this software is expressly prohibited.
+          ^C
+          banner login ^C
+          IOSv - Cisco Systems Confidential -
+
+          Supplemental End User License Restrictions
+
+          This IOSv software is provided AS-IS without warranty of any kind. Under no circumstances may this software be used separate from the Cisco Modeling Labs Software that this software was provided with, or deployed or used as part of a production environment.
+
+          By using the software, you agree to abide by the terms and conditions of the Cisco End User License Agreement at http://www.cisco.com/go/eula. Unauthorized use or distribution of this software is expressly prohibited.
+          ^C
+          !
+          line con 0
+           exec-timeout 0 0
+           logging synchronous
+          line aux 0
+          line vty 0 4
+           exec-timeout 0 0
+           login
+          !
+          ntp server 10.0.255.2
+          ntp server 10.0.255.3
+          !
+          end
+    cpu_limit: null
+    cpus: null
+    data_volume: null
+    hide_links: false
+    id: n4
+    image_definition: null
+    label: DSW1
+    node_definition: iosvl2
+    parameters: {}
+    priority: null
+    pyats:
+      username: null
+      password: null
+      enable_password: null
+    ram: null
+    tags: []
+    x: 40
+    y: 120
+    interfaces:
+      - id: i0
+        label: Loopback0
+        mac_address: null
+        type: loopback
+      - id: i1
+        label: GigabitEthernet0/0
+        mac_address: null
+        type: physical
+        slot: 0
+      - id: i2
+        label: GigabitEthernet0/1
+        mac_address: null
+        type: physical
+        slot: 1
+      - id: i3
+        label: GigabitEthernet0/2
+        mac_address: null
+        type: physical
+        slot: 2
+      - id: i4
+        label: GigabitEthernet0/3
+        mac_address: null
+        type: physical
+        slot: 3
+      - id: i5
+        label: GigabitEthernet1/0
+        mac_address: null
+        type: physical
+        slot: 4
+      - id: i6
+        label: GigabitEthernet1/1
+        mac_address: null
+        type: physical
+        slot: 5
+  - boot_disk_size: null
+    configuration:
+      - name: ios_config.txt
+        content: |-
+          Building configuration...
+
+          Current configuration : 5239 bytes
+          !
+          ! Last configuration change at 00:09:18 UTC Wed Oct 28 2026
+          !
+          version 15.2
+          service timestamps debug datetime msec
+          service timestamps log datetime msec
+          no service password-encryption
+          service compress-config
+          !
+          hostname DSW2
+          !
+          boot-start-marker
+          boot-end-marker
+          !
+          !
+          no logging console
+          !
+          no aaa new-model
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          no ip domain-lookup
+          ip cef
+          ipv6 unicast-routing
+          ipv6 cef
+          !
+          !
+          !
+          spanning-tree mode rapid-pvst
+          spanning-tree extend system-id
+          spanning-tree vlan 1,10,20,30,40 priority 28672
+          spanning-tree vlan 10,20,30,40 hello-time 3
+          spanning-tree vlan 10,20,30,40 forward-time 10
+          !
+          lldp run
+          cdp timer 5
+          cdp holdtime 60
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          interface Loopback1
+           ip address 10.0.255.5 255.255.255.255
+           ip ospf 1 area 0
+           ipv6 address 2001:DB8:0:255::5/128
+           ipv6 ospf 1 area 0
+          !
+          interface Port-channel1
+           switchport trunk encapsulation dot1q
+           switchport mode trunk
+          !
+          interface GigabitEthernet0/0
+           description Link to CSW2
+           no switchport
+           ip address 10.0.250.30 255.255.255.252
+           ip ospf dead-interval 15
+           ip ospf hello-interval 5
+           ip ospf 1 area 0
+           negotiation auto
+           ipv6 enable
+           ipv6 ospf 1 area 0
+          !
+          interface GigabitEthernet0/1
+           description Link to CSW1
+           no switchport
+           ip address 10.0.250.26 255.255.255.252
+           ip ospf dead-interval 15
+           ip ospf hello-interval 5
+           ip ospf 1 area 0
+           negotiation auto
+           ipv6 enable
+           ipv6 ospf 1 area 0
+          !
+          interface GigabitEthernet0/2
+           description Link to DSW1
+           switchport trunk encapsulation dot1q
+           switchport mode trunk
+           negotiation auto
+           channel-group 1 mode passive
+          !
+          interface GigabitEthernet0/3
+           description Link to DSW1
+           switchport trunk encapsulation dot1q
+           switchport mode trunk
+           negotiation auto
+           channel-group 1 mode passive
+          !
+          interface GigabitEthernet1/0
+           description Link to ASW2
+           switchport trunk encapsulation dot1q
+           switchport mode trunk
+           negotiation auto
+          !
+          interface GigabitEthernet1/1
+           description Link to ASW1
+           switchport trunk encapsulation dot1q
+           switchport mode trunk
+           negotiation auto
+          !
+          interface Vlan10
+           ip address 10.0.0.2 255.255.255.128
+           ip access-group BLOCK-V10-HTTP in
+           ip helper-address 10.0.250.2
+           standby version 2
+           standby 1 ip 10.0.0.3
+           ip ospf dead-interval 15
+           ip ospf hello-interval 5
+           ip ospf 1 area 0
+           ipv6 address 2001:DB8:0:10::2/64
+           ipv6 ospf 1 area 0
+          !
+          interface Vlan20
+           ip address 10.0.0.130 255.255.255.192
+           ip ospf dead-interval 15
+           ip ospf hello-interval 5
+           ip ospf 1 area 0
+           ipv6 address 2001:DB8:0:20::2/64
+           ipv6 ospf 1 area 0
+          !
+          interface Vlan30
+           ip address 10.0.0.194 255.255.255.240
+           ip ospf dead-interval 15
+           ip ospf hello-interval 5
+           ip ospf 1 area 0
+           ipv6 address 2001:DB8:0:30::2/64
+           ipv6 ospf 1 area 0
+          !
+          interface Vlan40
+           ip address 10.0.0.210 255.255.255.248
+           ip ospf dead-interval 15
+           ip ospf hello-interval 5
+           ip ospf 1 area 0
+           ipv6 address 2001:DB8:0:40::2/64
+           ipv6 ospf 1 area 0
+          !
+          router ospf 1
+           router-id 10.0.255.5
+           passive-interface Vlan10
+           passive-interface Vlan20
+           passive-interface Vlan30
+          !
+          ip forward-protocol nd
+          !
+          ip http server
+          ip http secure-server
+          !
+          ip ssh server algorithm encryption aes128-ctr aes192-ctr aes256-ctr
+          ip ssh client algorithm encryption aes128-ctr aes192-ctr aes256-ctr
+          !
+          ip access-list extended BLOCK-V10-HTTP
+           deny   tcp 10.0.0.0 0.0.0.127 host 1.1.1.1 eq www
+           permit ip any any
+          !
+          ipv6 router ospf 1
+           router-id 10.0.255.5
+           passive-interface Vlan10
+           passive-interface Vlan20
+           passive-interface Vlan30
+          !
+          !
+          !
+          !
+          !
+          control-plane
+          !
+          banner exec ^C
+          IOSv - Cisco Systems Confidential -
+
+          Supplemental End User License Restrictions
+
+          This IOSv software is provided AS-IS without warranty of any kind. Under no circumstances may this software be used separate from the Cisco Modeling Labs Software that this software was provided with, or deployed or used as part of a production environment.
+
+          By using the software, you agree to abide by the terms and conditions of the Cisco End User License Agreement at http://www.cisco.com/go/eula. Unauthorized use or distribution of this software is expressly prohibited.
+          ^C
+          banner incoming ^C
+          IOSv - Cisco Systems Confidential -
+
+          Supplemental End User License Restrictions
+
+          This IOSv software is provided AS-IS without warranty of any kind. Under no circumstances may this software be used separate from the Cisco Modeling Labs Software that this software was provided with, or deployed or used as part of a production environment.
+
+          By using the software, you agree to abide by the terms and conditions of the Cisco End User License Agreement at http://www.cisco.com/go/eula. Unauthorized use or distribution of this software is expressly prohibited.
+          ^C
+          banner login ^C
+          IOSv - Cisco Systems Confidential -
+
+          Supplemental End User License Restrictions
+
+          This IOSv software is provided AS-IS without warranty of any kind. Under no circumstances may this software be used separate from the Cisco Modeling Labs Software that this software was provided with, or deployed or used as part of a production environment.
+
+          By using the software, you agree to abide by the terms and conditions of the Cisco End User License Agreement at http://www.cisco.com/go/eula. Unauthorized use or distribution of this software is expressly prohibited.
+          ^C
+          !
+          line con 0
+           exec-timeout 0 0
+           logging synchronous
+          line aux 0
+          line vty 0 4
+           exec-timeout 0 0
+           login
+          !
+          ntp server 10.0.255.2
+          ntp server 10.0.255.3
+          !
+          end
+    cpu_limit: null
+    cpus: null
+    data_volume: null
+    hide_links: false
+    id: n5
+    image_definition: null
+    label: DSW2
+    node_definition: iosvl2
+    parameters: {}
+    priority: null
+    pyats:
+      username: null
+      password: null
+      enable_password: null
+    ram: null
+    tags: []
+    x: 320
+    y: 120
+    interfaces:
+      - id: i0
+        label: Loopback0
+        mac_address: null
+        type: loopback
+      - id: i1
+        label: GigabitEthernet0/0
+        mac_address: null
+        type: physical
+        slot: 0
+      - id: i2
+        label: GigabitEthernet0/1
+        mac_address: null
+        type: physical
+        slot: 1
+      - id: i3
+        label: GigabitEthernet0/2
+        mac_address: null
+        type: physical
+        slot: 2
+      - id: i4
+        label: GigabitEthernet0/3
+        mac_address: null
+        type: physical
+        slot: 3
+      - id: i5
+        label: GigabitEthernet1/0
+        mac_address: null
+        type: physical
+        slot: 4
+      - id: i6
+        label: GigabitEthernet1/1
+        mac_address: null
+        type: physical
+        slot: 5
+  - boot_disk_size: null
+    configuration:
+      - name: ios_config.txt
+        content: |-
+          Building configuration...
+
+          Current configuration : 4206 bytes
+          !
+          ! Last configuration change at 00:31:37 UTC Wed Oct 28 2026
+          !
+          version 15.2
+          service timestamps debug datetime msec
+          service timestamps log datetime msec
+          no service password-encryption
+          service compress-config
+          !
+          hostname ASW1
+          !
+          boot-start-marker
+          boot-end-marker
+          !
+          !
+          no logging console
+          !
+          no aaa new-model
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          no ip domain-lookup
+          ip cef
+          ipv6 unicast-routing
+          ipv6 cef
+          !
+          !
+          errdisable recovery cause bpduguard
+          errdisable recovery interval 600
+          !
+          spanning-tree mode rapid-pvst
+          spanning-tree portfast edge default
+          spanning-tree portfast edge bpduguard default
+          spanning-tree extend system-id
+          spanning-tree vlan 10,20,30,40 hello-time 3
+          spanning-tree vlan 10,20,30,40 forward-time 10
+          !
+          lldp run
+          cdp timer 5
+          cdp holdtime 60
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          interface Loopback1
+           ip address 10.0.255.6 255.255.255.255
+           ip ospf dead-interval 15
+           ip ospf hello-interval 5
+           ip ospf 1 area 0
+           ipv6 address 2001:DB8:0:255::6/128
+           ipv6 ospf 1 area 0
+          !
+          interface GigabitEthernet0/0
+           description Link to DSW1
+           switchport mode dynamic desirable
+           negotiation auto
+           no lldp transmit
+           no lldp receive
+          !
+          interface GigabitEthernet0/1
+           description Link to DSW2
+           switchport mode dynamic desirable
+           negotiation auto
+           no lldp transmit
+           no lldp receive
+          !
+          interface GigabitEthernet0/2
+           switchport access vlan 10
+           switchport mode access
+           switchport voice vlan 20
+           negotiation auto
+          !
+          interface GigabitEthernet0/3
+           negotiation auto
+          !
+          interface GigabitEthernet1/0
+           description Link to PC1
+           switchport access vlan 10
+           switchport mode access
+           switchport port-security mac-address sticky
+           switchport port-security mac-address sticky 5254.0082.42bb
+           switchport port-security
+           negotiation auto
+           no lldp transmit
+           no cdp enable
+          !
+          interface Vlan10
+           no ip address
+           shutdown
+          !
+          interface Vlan20
+           no ip address
+           shutdown
+          !
+          interface Vlan30
+           no ip address
+           shutdown
+          !
+          interface Vlan40
+           ip address 10.0.0.211 255.255.255.248
+           ip ospf dead-interval 15
+           ip ospf hello-interval 5
+           ip ospf 1 area 0
+           ipv6 address 2001:DB8:0:40::3/64
+           ipv6 ospf 1 area 0
+          !
+          router ospf 1
+           router-id 10.0.255.6
+          !
+          ip forward-protocol nd
+          !
+          ip http server
+          ip http secure-server
+          !
+          ip ssh server algorithm encryption aes128-ctr aes192-ctr aes256-ctr
+          ip ssh client algorithm encryption aes128-ctr aes192-ctr aes256-ctr
+          !
+          !
+          ipv6 router ospf 1
+           router-id 10.0.255.6
+          !
+          !
+          !
+          !
+          !
+          control-plane
+          !
+          banner exec ^C
+          IOSv - Cisco Systems Confidential -
+
+          Supplemental End User License Restrictions
+
+          This IOSv software is provided AS-IS without warranty of any kind. Under no circumstances may this software be used separate from the Cisco Modeling Labs Software that this software was provided with, or deployed or used as part of a production environment.
+
+          By using the software, you agree to abide by the terms and conditions of the Cisco End User License Agreement at http://www.cisco.com/go/eula. Unauthorized use or distribution of this software is expressly prohibited.
+          ^C
+          banner incoming ^C
+          IOSv - Cisco Systems Confidential -
+
+          Supplemental End User License Restrictions
+
+          This IOSv software is provided AS-IS without warranty of any kind. Under no circumstances may this software be used separate from the Cisco Modeling Labs Software that this software was provided with, or deployed or used as part of a production environment.
+
+          By using the software, you agree to abide by the terms and conditions of the Cisco End User License Agreement at http://www.cisco.com/go/eula. Unauthorized use or distribution of this software is expressly prohibited.
+          ^C
+          banner login ^C
+          IOSv - Cisco Systems Confidential -
+
+          Supplemental End User License Restrictions
+
+          This IOSv software is provided AS-IS without warranty of any kind. Under no circumstances may this software be used separate from the Cisco Modeling Labs Software that this software was provided with, or deployed or used as part of a production environment.
+
+          By using the software, you agree to abide by the terms and conditions of the Cisco End User License Agreement at http://www.cisco.com/go/eula. Unauthorized use or distribution of this software is expressly prohibited.
+          ^C
+          !
+          line con 0
+           exec-timeout 0 0
+           logging synchronous
+          line aux 0
+          line vty 0 4
+           exec-timeout 0 0
+           login
+          !
+          ntp server 10.0.255.4
+          ntp server 10.0.255.5
+          !
+          end
+    cpu_limit: null
+    cpus: null
+    data_volume: null
+    hide_links: false
+    id: n6
+    image_definition: null
+    label: ASW1
+    node_definition: iosvl2
+    parameters: {}
+    priority: null
+    pyats:
+      username: null
+      password: null
+      enable_password: null
+    ram: null
+    tags: []
+    x: 40
+    y: 280
+    interfaces:
+      - id: i0
+        label: Loopback0
+        mac_address: null
+        type: loopback
+      - id: i1
+        label: GigabitEthernet0/0
+        mac_address: null
+        type: physical
+        slot: 0
+      - id: i2
+        label: GigabitEthernet0/1
+        mac_address: null
+        type: physical
+        slot: 1
+      - id: i3
+        label: GigabitEthernet0/2
+        mac_address: null
+        type: physical
+        slot: 2
+      - id: i4
+        label: GigabitEthernet0/3
+        mac_address: null
+        type: physical
+        slot: 3
+      - id: i5
+        label: GigabitEthernet1/0
+        mac_address: null
+        type: physical
+        slot: 4
+  - boot_disk_size: null
+    configuration:
+      - name: ios_config.txt
+        content: |-
+          Building configuration...
+
+          Current configuration : 3946 bytes
+          !
+          ! Last configuration change at 00:10:04 UTC Wed Oct 28 2026
+          !
+          version 15.2
+          service timestamps debug datetime msec
+          service timestamps log datetime msec
+          no service password-encryption
+          service compress-config
+          !
+          hostname ASW2
+          !
+          boot-start-marker
+          boot-end-marker
+          !
+          !
+          no logging console
+          !
+          no aaa new-model
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          no ip domain-lookup
+          ip cef
+          ipv6 unicast-routing
+          ipv6 cef
+          !
+          !
+          errdisable recovery cause bpduguard
+          errdisable recovery interval 600
+          !
+          spanning-tree mode rapid-pvst
+          spanning-tree portfast edge default
+          spanning-tree portfast edge bpduguard default
+          spanning-tree extend system-id
+          spanning-tree vlan 10,20,30,40 hello-time 3
+          spanning-tree vlan 10,20,30,40 forward-time 10
+          !
+          lldp run
+          cdp timer 5
+          cdp holdtime 60
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          interface Loopback1
+           ip address 10.0.255.7 255.255.255.255
+           ip ospf 1 area 0
+           ipv6 address 2001:DB8:0:255::7/128
+           ipv6 ospf 1 area 0
+          !
+          interface GigabitEthernet0/0
+           description Link to DSW2
+           switchport mode dynamic desirable
+           negotiation auto
+           no lldp transmit
+           no lldp receive
+          !
+          interface GigabitEthernet0/1
+           description Link to DSW1
+           switchport mode dynamic desirable
+           negotiation auto
+           no lldp transmit
+           no lldp receive
+          !
+          interface GigabitEthernet0/2
+           negotiation auto
+          !
+          interface GigabitEthernet0/3
+           negotiation auto
+          !
+          interface GigabitEthernet1/0
+           description Link to PC2
+           switchport access vlan 10
+           switchport mode access
+           negotiation auto
+           no lldp transmit
+           no cdp enable
+          !
+          interface Vlan10
+           no ip address
+           shutdown
+          !
+          interface Vlan20
+           no ip address
+           shutdown
+          !
+          interface Vlan30
+           no ip address
+           shutdown
+          !
+          interface Vlan40
+           ip address 10.0.0.212 255.255.255.248
+           ip ospf dead-interval 15
+           ip ospf hello-interval 5
+           ip ospf 1 area 0
+           ipv6 address 2001:DB8:0:40::4/64
+           ipv6 ospf 1 area 0
+          !
+          router ospf 1
+           router-id 10.0.255.7
+          !
+          ip forward-protocol nd
+          !
+          ip http server
+          ip http secure-server
+          !
+          ip ssh server algorithm encryption aes128-ctr aes192-ctr aes256-ctr
+          ip ssh client algorithm encryption aes128-ctr aes192-ctr aes256-ctr
+          !
+          !
+          ipv6 router ospf 1
+           router-id 10.0.255.7
+          !
+          !
+          !
+          !
+          !
+          control-plane
+          !
+          banner exec ^C
+          IOSv - Cisco Systems Confidential -
+
+          Supplemental End User License Restrictions
+
+          This IOSv software is provided AS-IS without warranty of any kind. Under no circumstances may this software be used separate from the Cisco Modeling Labs Software that this software was provided with, or deployed or used as part of a production environment.
+
+          By using the software, you agree to abide by the terms and conditions of the Cisco End User License Agreement at http://www.cisco.com/go/eula. Unauthorized use or distribution of this software is expressly prohibited.
+          ^C
+          banner incoming ^C
+          IOSv - Cisco Systems Confidential -
+
+          Supplemental End User License Restrictions
+
+          This IOSv software is provided AS-IS without warranty of any kind. Under no circumstances may this software be used separate from the Cisco Modeling Labs Software that this software was provided with, or deployed or used as part of a production environment.
+
+          By using the software, you agree to abide by the terms and conditions of the Cisco End User License Agreement at http://www.cisco.com/go/eula. Unauthorized use or distribution of this software is expressly prohibited.
+          ^C
+          banner login ^C
+          IOSv - Cisco Systems Confidential -
+
+          Supplemental End User License Restrictions
+
+          This IOSv software is provided AS-IS without warranty of any kind. Under no circumstances may this software be used separate from the Cisco Modeling Labs Software that this software was provided with, or deployed or used as part of a production environment.
+
+          By using the software, you agree to abide by the terms and conditions of the Cisco End User License Agreement at http://www.cisco.com/go/eula. Unauthorized use or distribution of this software is expressly prohibited.
+          ^C
+          !
+          line con 0
+           exec-timeout 0 0
+           logging synchronous
+          line aux 0
+          line vty 0 4
+           exec-timeout 0 0
+           login
+          !
+          ntp server 10.0.255.4
+          ntp server 10.0.255.5
+          !
+          end
+    cpu_limit: null
+    cpus: null
+    data_volume: null
+    hide_links: false
+    id: n7
+    image_definition: null
+    label: ASW2
+    node_definition: iosvl2
+    parameters: {}
+    priority: null
+    pyats:
+      username: null
+      password: null
+      enable_password: null
+    ram: null
+    tags: []
+    x: 320
+    y: 280
+    interfaces:
+      - id: i0
+        label: Loopback0
+        mac_address: null
+        type: loopback
+      - id: i1
+        label: GigabitEthernet0/0
+        mac_address: null
+        type: physical
+        slot: 0
+      - id: i2
+        label: GigabitEthernet0/1
+        mac_address: null
+        type: physical
+        slot: 1
+      - id: i3
+        label: GigabitEthernet0/2
+        mac_address: null
+        type: physical
+        slot: 2
+      - id: i4
+        label: GigabitEthernet0/3
+        mac_address: null
+        type: physical
+        slot: 3
+      - id: i5
+        label: GigabitEthernet1/0
+        mac_address: null
+        type: physical
+        slot: 4
+  - boot_disk_size: null
+    configuration:
+      - name: node.cfg
+        content: |-
+          # this is a shell script which will be sourced at boot
+          hostname PC1
+          dhclient eth0
+          ip link set dev eth0 up
+          # configurable user account
+          USERNAME=cisco
+          PASSWORD=cisco
+    cpu_limit: null
+    cpus: null
+    data_volume: null
+    hide_links: false
+    id: n8
+    image_definition: null
+    label: PC1
+    node_definition: desktop
+    parameters: {}
+    priority: null
+    pyats:
+      username: null
+      password: null
+      enable_password: null
+    ram: null
+    tags: []
+    x: -80
+    y: 280
+    interfaces:
+      - id: i0
+        label: eth0
+        mac_address: null
+        type: physical
+        slot: 0
+  - boot_disk_size: null
+    configuration:
+      - name: node.cfg
+        content: |-
+          # this is a shell script which will be sourced at boot
+          hostname PC2
+          dhclient eth0
+          ip link set dev eth0 up
+          # configurable user account
+          USERNAME=cisco
+          PASSWORD=cisco
+    cpu_limit: null
+    cpus: null
+    data_volume: null
+    hide_links: false
+    id: n9
+    image_definition: null
+    label: PC2
+    node_definition: desktop
+    parameters: {}
+    priority: null
+    pyats:
+      username: null
+      password: null
+      enable_password: null
+    ram: null
+    tags: []
+    x: 480
+    y: 280
+    interfaces:
+      - id: i0
+        label: eth0
+        mac_address: null
+        type: physical
+        slot: 0
+links:
+  - id: l0
+    n1: n1
+    n2: n0
+    i1: i3
+    i2: i1
+    conditioning: {}
+    label: R1-GigabitEthernet0/2<->ISP-GigabitEthernet0/0
+  - id: l1
+    n1: n1
+    n2: n3
+    i1: i2
+    i2: i5
+    conditioning: {}
+    label: R1-GigabitEthernet0/1<->CSW2-GigabitEthernet1/0
+  - id: l2
+    n1: n2
+    n2: n3
+    i1: i1
+    i2: i1
+    conditioning: {}
+    label: CSW1-GigabitEthernet0/0<->CSW2-GigabitEthernet0/0
+  - id: l3
+    n1: n1
+    n2: n2
+    i1: i1
+    i2: i5
+    conditioning: {}
+    label: R1-GigabitEthernet0/0<->CSW1-GigabitEthernet1/0
+  - id: l4
+    n1: n2
+    n2: n3
+    i1: i2
+    i2: i2
+    conditioning: {}
+    label: CSW1-GigabitEthernet0/1<->CSW2-GigabitEthernet0/1
+  - id: l5
+    n1: n2
+    n2: n4
+    i1: i3
+    i2: i1
+    conditioning: {}
+    label: CSW1-GigabitEthernet0/2<->DSW1-GigabitEthernet0/0
+  - id: l6
+    n1: n2
+    n2: n5
+    i1: i4
+    i2: i2
+    conditioning: {}
+    label: CSW1-GigabitEthernet0/3<->DSW2-GigabitEthernet0/1
+  - id: l7
+    n1: n3
+    n2: n5
+    i1: i3
+    i2: i1
+    conditioning: {}
+    label: CSW2-GigabitEthernet0/2<->DSW2-GigabitEthernet0/0
+  - id: l8
+    n1: n4
+    n2: n6
+    i1: i5
+    i2: i1
+    conditioning: {}
+    label: DSW1-GigabitEthernet1/0<->ASW1-GigabitEthernet0/0
+  - id: l9
+    n1: n5
+    n2: n7
+    i1: i5
+    i2: i1
+    conditioning: {}
+    label: DSW2-GigabitEthernet1/0<->ASW2-GigabitEthernet0/0
+  - id: l10
+    n1: n4
+    n2: n3
+    i1: i2
+    i2: i4
+    conditioning: {}
+    label: DSW1-GigabitEthernet0/1<->CSW2-GigabitEthernet0/3
+  - id: l11
+    n1: n4
+    n2: n5
+    i1: i3
+    i2: i3
+    conditioning: {}
+    label: DSW1-GigabitEthernet0/2<->DSW2-GigabitEthernet0/2
+  - id: l12
+    n1: n4
+    n2: n5
+    i1: i4
+    i2: i4
+    conditioning: {}
+    label: DSW1-GigabitEthernet0/3<->DSW2-GigabitEthernet0/3
+  - id: l13
+    n1: n6
+    n2: n5
+    i1: i2
+    i2: i6
+    conditioning: {}
+    label: ASW1-GigabitEthernet0/1<->DSW2-GigabitEthernet1/1
+  - id: l14
+    n1: n7
+    n2: n4
+    i1: i2
+    i2: i6
+    conditioning: {}
+    label: ASW2-GigabitEthernet0/1<->DSW1-GigabitEthernet1/1
+  - id: l15
+    n1: n8
+    n2: n6
+    i1: i0
+    i2: i5
+    conditioning: {}
+    label: PC1-eth0<->ASW1-GigabitEthernet1/0
+  - id: l16
+    n1: n9
+    n2: n7
+    i1: i0
+    i2: i5
+    conditioning: {}
+    label: PC2-eth0<->ASW2-GigabitEthernet1/0
+lab:
+  description: ''
+  notes: ''
+  title: Lab at Fri 20:09 PM
+  node_staging:
+    enabled: false
+    start_remaining: true
+    abort_on_failure: false
+  version: 0.3.1

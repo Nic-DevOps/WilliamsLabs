@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Network Fundamentals Lab · Williams Labs</title>
+<meta name="description" content="A three-tier campus network built end to end in CML: VLANs, EtherChannel, Rapid PVST+, VLSM and IPv6 addressing, OSPFv2/v3, HSRP, DHCP, NAT, NTP, port security, ACLs, and SSH.">
+<link rel="stylesheet" href="../css/style.css?v=20261016">
+<script src="../js/theme.js"></script>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="nav-inner">
+    <a href="../index.html" class="brand"><span class="dot"></span>Williams Labs</a>
+    <nav class="main-nav">
+      <a href="../index.html">Home</a>
+      <a href="../index.html#projects">Projects</a>
+      <a href="../index.html#monitoring">Monitoring</a>
+      <a href="../index.html#technologies">Technologies</a>
+      <a href="https://github.com/Nic-DevOps/WilliamsLabs" target="_blank" rel="noopener">GitHub</a>
+      <div class="theme-toggle" id="theme-toggle" role="group" aria-label="Theme">
+        <span class="theme-toggle-thumb"></span>
+        <button type="button" class="theme-toggle-btn" data-theme-value="light" aria-label="Light mode">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+        </button>
+        <button type="button" class="theme-toggle-btn" data-theme-value="dark" aria-label="Dark mode">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </button>
+      </div>
+    </nav>
+  </div>
+</header>
+
+<section style="padding-top:3rem; padding-bottom:0; border-bottom:none;">
+  <div class="wrap">
+    <div class="breadcrumb"><a href="../index.html">Home</a> / <a href="../index.html#projects">Projects</a> / Network Fundamentals</div>
+    <span class="status-pill complete">Complete</span>
+    <h1 style="font-size:2.1rem; letter-spacing:-0.02em; margin: 0.75rem 0 0;">Network Fundamentals Lab</h1>
+    <p style="color:var(--text-dim); font-size:1.05rem; max-width:680px; margin-top:0.75rem;">Build a three-tier campus network end to end — switching, IPv4/IPv6 addressing, OSPF routing, network services, security, and management — on a single topology with an edge router to an ISP.</p>
+    <div class="meta-row">
+      <span><strong>Platform:</strong> Cisco Modeling Labs (IOSv / IOSvL2)</span>
+      <span><strong>Design:</strong> Access / distribution / core + edge</span>
+      <span><strong>Status:</strong> Complete</span>
+    </div>
+  </div>
+</section>
+
+<section style="padding-top:0;">
+  <div class="wrap">
+    <div class="prose">
+
+<h2>Overview</h2>
+<p>A standalone campus lab, separate from the multi-site Williams Labs build. Two access switches connect hosts and IP phones, two Layer 3 distribution switches provide the VLAN gateways, two core switches route between distribution and the edge, and R1 connects the campus to an ISP router that hosts a server at 1.1.1.1.</p>
+<img src="../images/network-fundamentals-topology.webp" alt="Network Fundamentals Lab topology: R1 and ISP at the top, CSW1/CSW2 core, DSW1/DSW2 distribution, ASW1/ASW2 access, and hosts H1 and H2" style="display:block; width:100%; max-width:560px; height:auto; margin:1.5rem auto; border-radius:8px; background:#fff;">
+
+<h2>LAN switching</h2>
+<ul>
+<li>VLANs 10 CLIENTS, 20 VOICE, 30 PRINTERS, 40 MANAGEMENT, with a data + voice VLAN access port for IP phones</li>
+<li>Access switches negotiate trunks with DTP (<code>dynamic desirable</code>); distribution switches trunk statically</li>
+<li>LACP EtherChannel between DSW1 (active) and DSW2 (passive); a static Layer 3 EtherChannel between the core switches</li>
+<li>Rapid PVST+ with DSW1 as root for every VLAN and DSW2 as secondary</li>
+<li>PortFast and BPDU Guard by default on edge ports, with errdisable auto-recovery after 10 minutes</li>
+<li>Custom STP timers (3 s hello, 10 s forward delay, 20 s max age) set on every switch so they survive a root change</li>
+</ul>
+
+<h2>IPv4 addressing (VLSM)</h2>
+<table class="data-table">
+<thead><tr><th>VLAN</th><th>Subnet</th><th>Usable</th><th>Gateway</th></tr></thead>
+<tbody>
+<tr><td>10 CLIENTS</td><td>10.0.0.0/25</td><td>126</td><td>10.0.0.3 (HSRP VIP)</td></tr>
+<tr><td>20 VOICE</td><td>10.0.0.128/26</td><td>62</td><td>10.0.0.129</td></tr>
+<tr><td>30 PRINTERS</td><td>10.0.0.192/28</td><td>14</td><td>10.0.0.193</td></tr>
+<tr><td>40 MANAGEMENT</td><td>10.0.0.208/29</td><td>6</td><td>10.0.0.209</td></tr>
+</tbody>
+</table>
+<p>Subnets are sized largest-first as tightly as the device counts allow. Loopbacks use <code>/32</code>s from 10.0.255.0/24, internal point-to-point links use <code>/30</code>s from 10.0.250.0/24, and R1 reaches the ISP on 172.16.1.0/30.</p>
+
+<h2>IPv6 addressing</h2>
+<p>From 2001:db8::/32, the fourth hextet mirrors the IPv4 plan: <code>2001:db8:0:&lt;vlan&gt;::/64</code> for VLANs, <code>2001:db8:0:255::x/128</code> for loopbacks, and a <code>/127</code> on the R1–ISP link. Internal point-to-point links run on link-local addresses only.</p>
+
+<h2>Routing</h2>
+<pre>! R1 — default routes toward the ISP
+ip route 0.0.0.0 0.0.0.0 172.16.1.2
+ipv6 route ::/0 2001:db8:0:250::1
+
+! Core bundle — no DR/BDR election, fast timers
+interface Port-channel1
+ ip ospf network point-to-point
+ ip ospf hello-interval 5
+ ip ospf dead-interval 15</pre>
+<ul>
+<li>OSPFv2 and OSPFv3 in a single area 0, with IPv4 loopbacks as router IDs</li>
+<li>User VLANs passive on the distribution switches to avoid unneeded adjacencies</li>
+<li>R1 originates the IPv6 default route into OSPFv3</li>
+</ul>
+
+<h2>Network services</h2>
+<table class="data-table">
+<thead><tr><th>Service</th><th>Implementation</th></tr></thead>
+<tbody>
+<tr><td>HSRP</td><td>VLAN 10 virtual gateway 10.0.0.3 — DSW1 active (priority 110, preempt), DSW2 standby</td></tr>
+<tr><td>DHCP</td><td>Pools on R1 for VLAN 10 (DNS 1.1.1.1, MYDOMAIN.LOCAL, 48-hour lease) and VLAN 20 (TFTP option 150), relayed by the distribution SVIs</td></tr>
+<tr><td>NAT</td><td>PAT overload of 10.0.0.0/8 to R1's ISP-facing address</td></tr>
+<tr><td>NTP</td><td>Hierarchy following the topology: 1.1.1.1 → R1 → core → distribution → access</td></tr>
+</tbody>
+</table>
+
+<h2>Security &amp; management</h2>
+<ul>
+<li>Login banner on R1 and a MOTD on CSW1</li>
+<li>Port security on H1's port — one sticky MAC, shutdown on violation</li>
+<li>Extended ACL on the VLAN 10 SVIs blocking HTTP to 1.1.1.1 while allowing everything else</li>
+<li>SSH v2 only on CSW1 with a local user and encrypted passwords</li>
+<li>Syslog from DSW1, CDP tuned to 5 s / 60 s and disabled toward hosts and the ISP, and LLDP on the access layer (off on uplinks, receive-only toward hosts)</li>
+</ul>
+
+<h2>Verification</h2>
+<ul>
+<li><code>show etherchannel summary</code> — LACP bundle on the distribution pair, static Layer 3 bundle on the core</li>
+<li><code>show spanning-tree brief</code> — DSW1 priority 0, DSW2 priority 28672 for every VLAN</li>
+<li><code>show standby brief</code> — DSW1 active, DSW2 standby for 10.0.0.3</li>
+<li>H1 and H2 received 10.0.0.4 and 10.0.0.5 from R1 through the DHCP relay</li>
+<li><code>show ip nat translations</code> — H1 translated to 172.16.1.1 toward 1.1.1.1</li>
+<li>SSH from H1 to CSW1's loopback shows the MOTD and lands in privileged mode</li>
+</ul>
+
+<h2>Lab files</h2>
+<p>The full write-up with every configuration step and screenshot, plus the CML topology file with the completed configs, are on <a href="https://github.com/Nic-DevOps/WilliamsLabs/tree/main/Network-Fundamentals-Lab" target="_blank" rel="noopener">GitHub</a>.</p>
+
+    </div>
+
+    <div class="project-nav">
+      <a href="10-active-directory.html">&larr; 10 · Active Directory</a>
+      <a href="netbox.html">NetBox &rarr;</a>
+    </div>
+  </div>
+</section>
+
+<footer class="site-footer">
+  Williams Labs &middot; Infrastructure Lab
+</footer>
+
+</body>
+</html>
