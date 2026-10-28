@@ -7,6 +7,11 @@
 <meta name="description" content="A three-tier campus network built end to end in CML: VLANs, EtherChannel, Rapid PVST+, VLSM and IPv6 addressing, OSPFv2/v3, HSRP, DHCP, NAT, NTP, port security, ACLs, and SSH.">
 <link rel="stylesheet" href="../css/style.css?v=20261016">
 <script src="../js/theme.js"></script>
+<style>
+  .prose img { display: block; max-width: 100%; height: auto; margin: 0 0 1.5rem; border-radius: 6px; border: 1px solid var(--border); }
+  .prose img[src$="topology.webp"] { max-width: 560px; width: 100%; margin: 1.5rem auto; background: #fff; }
+  .prose .data-table { display: block; overflow-x: auto; }
+</style>
 </head>
 <body>
 
@@ -50,83 +55,612 @@
   <div class="wrap">
     <div class="prose">
 
-<h2>Overview</h2>
-<p>A standalone campus lab, separate from the multi-site Williams Labs build. Two access switches connect hosts and IP phones, two Layer 3 distribution switches provide the VLAN gateways, two core switches route between distribution and the edge, and R1 connects the campus to an ISP router that hosts a server at 1.1.1.1.</p>
-<img src="../images/network-fundamentals-topology.webp" alt="Network Fundamentals Lab topology: R1 and ISP at the top, CSW1/CSW2 core, DSW1/DSW2 distribution, ASW1/ASW2 access, and hosts H1 and H2" style="display:block; width:100%; max-width:560px; height:auto; margin:1.5rem auto; border-radius:8px; background:#fff;">
+<h2>Objectives</h2>
 
-<h2>LAN switching</h2>
+<p>Build a three-tier campus network (access, distribution, core) with an edge router to an ISP, end to end:</p>
+
 <ul>
-<li>VLANs 10 CLIENTS, 20 VOICE, 30 PRINTERS, 40 MANAGEMENT, with a data + voice VLAN access port for IP phones</li>
-<li>Access switches negotiate trunks with DTP (<code>dynamic desirable</code>); distribution switches trunk statically</li>
-<li>LACP EtherChannel between DSW1 (active) and DSW2 (passive); a static Layer 3 EtherChannel between the core switches</li>
-<li>Rapid PVST+ with DSW1 as root for every VLAN and DSW2 as secondary</li>
-<li>PortFast and BPDU Guard by default on edge ports, with errdisable auto-recovery after 10 minutes</li>
-<li>Custom STP timers (3 s hello, 10 s forward delay, 20 s max age) set on every switch so they survive a root change</li>
+<li>Configure VLANs, access ports, voice VLAN, and trunks.</li>
+<li>Bundle links with LACP (distribution) and static EtherChannel (core).</li>
+<li>Tune Rapid PVST+: root bridge placement, PortFast, BPDU Guard, and timers.</li>
+<li>Design an efficient IPv4 VLSM plan and an IPv6 plan for VLANs, loopbacks, and point-to-point links.</li>
+<li>Route IPv4 and IPv6 with OSPF (area 0) and default routes toward the ISP.</li>
+<li>Provide HSRP, DHCP, NAT, and NTP services.</li>
+<li>Apply security controls: banners, port security, an extended ACL, and SSH-only management.</li>
+<li>Configure syslog, CDP, and LLDP for network management.</li>
 </ul>
 
-<h2>IPv4 addressing (VLSM)</h2>
+<h2>Network Overview</h2>
+
+<img src="../images/network-fundamentals/topology.webp" alt="Network Fundamentals Lab topology" loading="lazy">
+
 <table class="data-table">
-<thead><tr><th>VLAN</th><th>Subnet</th><th>Usable</th><th>Gateway</th></tr></thead>
+<thead><tr><th>Layer</th><th>Devices</th><th>Role</th></tr></thead>
 <tbody>
-<tr><td>10 CLIENTS</td><td>10.0.0.0/25</td><td>126</td><td>10.0.0.3 (HSRP VIP)</td></tr>
-<tr><td>20 VOICE</td><td>10.0.0.128/26</td><td>62</td><td>10.0.0.129</td></tr>
-<tr><td>30 PRINTERS</td><td>10.0.0.192/28</td><td>14</td><td>10.0.0.193</td></tr>
-<tr><td>40 MANAGEMENT</td><td>10.0.0.208/29</td><td>6</td><td>10.0.0.209</td></tr>
+<tr><td>Edge</td><td>R1</td><td>Router to ISP, DHCP server, NAT, NTP source</td></tr>
+<tr><td>Core</td><td>CSW1, CSW2</td><td>Layer 3 core switches, static EtherChannel between them</td></tr>
+<tr><td>Distribution</td><td>DSW1, DSW2</td><td>Layer 3 SVIs for all VLANs, HSRP, LACP EtherChannel between them</td></tr>
+<tr><td>Access</td><td>ASW1, ASW2</td><td>Layer 2 access switches for hosts and phones</td></tr>
+<tr><td>Hosts</td><td>H1, H2</td><td>Linux hosts in VLAN 10</td></tr>
+<tr><td>ISP</td><td>ISP</td><td>Upstream router (not modified); hosts the 1.1.1.1 server</td></tr>
 </tbody>
 </table>
-<p>Subnets are sized largest-first as tightly as the device counts allow. Loopbacks use <code>/32</code>s from 10.0.255.0/24, internal point-to-point links use <code>/30</code>s from 10.0.250.0/24, and R1 reaches the ISP on 172.16.1.0/30.</p>
 
-<h2>IPv6 addressing</h2>
-<p>From 2001:db8::/32, the fourth hextet mirrors the IPv4 plan: <code>2001:db8:0:&lt;vlan&gt;::/64</code> for VLANs, <code>2001:db8:0:255::x/128</code> for loopbacks, and a <code>/127</code> on the R1–ISP link. Internal point-to-point links run on link-local addresses only.</p>
+<h3>VLANs</h3>
+
+<table class="data-table">
+<thead><tr><th>VLAN</th><th>Name</th><th>Max devices</th></tr></thead>
+<tbody>
+<tr><td>10</td><td>CLIENTS</td><td>100</td></tr>
+<tr><td>20</td><td>VOICE</td><td>40</td></tr>
+<tr><td>30</td><td>PRINTERS</td><td>12</td></tr>
+<tr><td>40</td><td>MANAGEMENT</td><td>6</td></tr>
+</tbody>
+</table>
+
+<h2>LAN Switching</h2>
+
+<h3>Create VLANs</h3>
+
+<p>On DSW1, DSW2, ASW1, and ASW2:</p>
+
+<pre>vlan 10
+ name CLIENTS
+vlan 20
+ name VOICE
+vlan 30
+ name PRINTERS
+vlan 40
+ name MANAGEMENT</pre>
+
+<h3>Access Ports</h3>
+
+<p>H1 and H2 connect to GigabitEthernet1/0 on their access switch and belong to VLAN 10:</p>
+
+<pre>interface g1/0
+ switchport mode access
+ switchport access vlan 10</pre>
+
+<p>GigabitEthernet0/2 on ASW1 is prepared for a computer in VLAN 10 with an IP phone in VLAN 20:</p>
+
+<pre>interface g0/2
+ switchport mode access
+ switchport access vlan 10
+ switchport voice vlan 20</pre>
+
+<h3>Trunks</h3>
+
+<p>The access layer negotiates the trunk dynamically:</p>
+
+<pre>interface range g0/0-1
+ switchport trunk encapsulation negotiate
+ switchport mode dynamic desirable</pre>
+
+<p>The distribution layer builds the trunk statically:</p>
+
+<pre>interface range g1/0-1
+ switchport trunk encapsulation dot1q
+ switchport mode trunk</pre>
+
+<h3>Distribution EtherChannel (LACP)</h3>
+
+<p>The links between DSW1 and DSW2 are bundled with a negotiation protocol. Company policy rules out proprietary protocols (PAgP), so LACP is used. DSW1 actively negotiates and DSW2 only responds.</p>
+
+<p>DSW1:</p>
+
+<pre>interface range g0/2-3
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+ channel-group 1 mode active</pre>
+
+<p>DSW2:</p>
+
+<pre>interface range g0/2-3
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+ channel-group 1 mode passive</pre>
+
+<p><code>show etherchannel summary</code> — Po1 is up as a Layer 2 LACP bundle:</p>
+
+<img src="../images/network-fundamentals/image.png" alt="LACP EtherChannel between DSW1 and DSW2" loading="lazy">
+
+<h3>Core EtherChannel (static)</h3>
+
+<p>The links between CSW1 and CSW2 are bundled with no negotiation protocol, as a routed (Layer 3) port-channel:</p>
+
+<pre>interface range g0/0-1
+ no switchport
+ channel-group 1 mode on</pre>
+
+<p>Po1 is up as a Layer 3 bundle (<code>RU</code>) with no protocol:</p>
+
+<img src="../images/network-fundamentals/image-1.png" alt="Static Layer 3 EtherChannel between CSW1 and CSW2" loading="lazy">
+
+<h3>Spanning Tree</h3>
+
+<p>Use the fastest option that still calculates a tree per VLAN — Rapid PVST+:</p>
+
+<pre>spanning-tree mode rapid-pvst</pre>
+
+<p>DSW1 is the root bridge for every VLAN, and DSW2 takes over if DSW1 fails.</p>
+
+<p>DSW1:</p>
+
+<pre>spanning-tree vlan 1,10,20,30,40 priority 0</pre>
+
+<p>DSW2:</p>
+
+<pre>spanning-tree vlan 1,10,20,30,40 root secondary</pre>
+
+<p>DSW1 holds priority 0 for every VLAN:</p>
+
+<img src="../images/network-fundamentals/image-2.png" alt="DSW1 spanning-tree bridge priorities" loading="lazy">
+
+<p>DSW2 holds priority 28672 as the secondary root:</p>
+
+<img src="../images/network-fundamentals/image-3.png" alt="DSW2 spanning-tree bridge priorities" loading="lazy">
+
+<h3>PortFast</h3>
+
+<p>Hosts boot in seconds and should forward traffic immediately instead of waiting on convergence. On the access switches:</p>
+
+<pre>spanning-tree portfast default</pre>
+
+<h3>BPDU Guard</h3>
+
+<p>To stop a malicious host from influencing spanning tree, an edge port that receives a BPDU goes down immediately and recovers on its own after 10 minutes:</p>
+
+<pre>spanning-tree portfast edge bpduguard default
+errdisable recovery cause bpduguard
+errdisable recovery interval 600</pre>
+
+<p>ASW1 Gi1/0 is in PortFast edge mode with BPDU Guard enabled by default:</p>
+
+<img src="../images/network-fundamentals/image-4.png" alt="PortFast and BPDU Guard on ASW1 Gi1/0" loading="lazy">
+
+<p>Errdisable recovery for <code>bpduguard</code> is enabled with a 600-second timer:</p>
+
+<img src="../images/network-fundamentals/image-5.png" alt="Errdisable recovery for BPDU Guard" loading="lazy">
+
+<h3>Timers</h3>
+
+<p>Company policy sets custom STP timers: hellos every 3 seconds, a 10-second forward delay, and a 20-second max age.</p>
+
+<pre>spanning-tree vlan 10,20,30,40 hello-time 3
+spanning-tree vlan 10,20,30,40 forward-time 10
+spanning-tree vlan 10,20,30,40 max-age 20</pre>
+
+<p>Non-root switches use the timers advertised by the root bridge. To keep these timers in effect no matter which switch becomes root, apply them on <strong>DSW1, DSW2, ASW1, and ASW2</strong>.</p>
+
+<h2>IP Addressing</h2>
+
+<h3>IPv4</h3>
+
+<p>The campus uses <code>10.0.0.0/8</code>. Subnets are sized as tightly as possible (VLSM), largest first, since the number of devices per VLAN won't change. Loopbacks and point-to-point links get their own <code>/24</code> blocks to leave room for new devices and VLANs.</p>
+
+<h3>VLAN Subnets</h3>
+
+<table class="data-table">
+<thead><tr><th>VLAN</th><th>Subnet</th><th>Usable hosts</th><th>Broadcast</th><th>DSW1 SVI</th><th>DSW2 SVI</th></tr></thead>
+<tbody>
+<tr><td>10</td><td><code>10.0.0.0/25</code></td><td><code>.1 – .126</code> (126)</td><td><code>10.0.0.127</code></td><td><code>10.0.0.1</code></td><td><code>10.0.0.2</code></td></tr>
+<tr><td>20</td><td><code>10.0.0.128/26</code></td><td><code>.129 – .190</code> (62)</td><td><code>10.0.0.191</code></td><td><code>10.0.0.129</code></td><td><code>10.0.0.130</code></td></tr>
+<tr><td>30</td><td><code>10.0.0.192/28</code></td><td><code>.193 – .206</code> (14)</td><td><code>10.0.0.207</code></td><td><code>10.0.0.193</code></td><td><code>10.0.0.194</code></td></tr>
+<tr><td>40</td><td><code>10.0.0.208/29</code></td><td><code>.209 – .214</code> (6)</td><td><code>10.0.0.215</code></td><td><code>10.0.0.209</code></td><td><code>10.0.0.210</code></td></tr>
+</tbody>
+</table>
+
+<ul>
+<li><strong>VLAN 10 HSRP virtual gateway:</strong> <code>10.0.0.3</code></li>
+<li><strong>VLAN 40 management:</strong> ASW1 <code>10.0.0.211</code>, ASW2 <code>10.0.0.212</code></li>
+</ul>
+
+<h3>Loopbacks (<code>10.0.255.0/24</code>, one <code>/32</code> per device)</h3>
+
+<table class="data-table">
+<thead><tr><th>Device</th><th>Loopback</th></tr></thead>
+<tbody>
+<tr><td>R1</td><td><code>10.0.255.1/32</code></td></tr>
+<tr><td>CSW1</td><td><code>10.0.255.2/32</code></td></tr>
+<tr><td>CSW2</td><td><code>10.0.255.3/32</code></td></tr>
+<tr><td>DSW1</td><td><code>10.0.255.4/32</code></td></tr>
+<tr><td>DSW2</td><td><code>10.0.255.5/32</code></td></tr>
+<tr><td>ASW1</td><td><code>10.0.255.6/32</code></td></tr>
+<tr><td>ASW2</td><td><code>10.0.255.7/32</code></td></tr>
+</tbody>
+</table>
+
+<h3>Point-to-Point Links (<code>10.0.250.0/24</code>, one <code>/30</code> per link)</h3>
+
+<table class="data-table">
+<thead><tr><th>Link</th><th>Subnet</th><th>Device A</th><th>Device B</th></tr></thead>
+<tbody>
+<tr><td>CSW1 ↔ R1</td><td><code>10.0.250.0/30</code></td><td>CSW1 <code>10.0.250.1</code></td><td>R1 <code>10.0.250.2</code></td></tr>
+<tr><td>CSW1 ↔ DSW1</td><td><code>10.0.250.4/30</code></td><td>CSW1 <code>10.0.250.5</code></td><td>DSW1 <code>10.0.250.6</code></td></tr>
+<tr><td>CSW1 ↔ CSW2 (Po1)</td><td><code>10.0.250.8/30</code></td><td>CSW1 <code>10.0.250.9</code></td><td>CSW2 <code>10.0.250.10</code></td></tr>
+<tr><td>CSW2 ↔ R1</td><td><code>10.0.250.12/30</code></td><td>CSW2 <code>10.0.250.13</code></td><td>R1 <code>10.0.250.14</code></td></tr>
+<tr><td>CSW2 ↔ DSW1</td><td><code>10.0.250.16/30</code></td><td>CSW2 <code>10.0.250.17</code></td><td>DSW1 <code>10.0.250.18</code></td></tr>
+<tr><td>CSW1 ↔ DSW2</td><td><code>10.0.250.24/30</code></td><td>CSW1 <code>10.0.250.25</code></td><td>DSW2 <code>10.0.250.26</code></td></tr>
+<tr><td>CSW2 ↔ DSW2</td><td><code>10.0.250.28/30</code></td><td>CSW2 <code>10.0.250.29</code></td><td>DSW2 <code>10.0.250.30</code></td></tr>
+</tbody>
+</table>
+
+<h3>R1 ↔ ISP (<code>172.16.1.0/30</code>)</h3>
+
+<table class="data-table">
+<thead><tr><th>Device</th><th>Address</th></tr></thead>
+<tbody>
+<tr><td>R1</td><td><code>172.16.1.1</code></td></tr>
+<tr><td>ISP</td><td><code>172.16.1.2</code> (preconfigured, not modified)</td></tr>
+</tbody>
+</table>
+
+<pre>interface &lt;R1-ISP-interface&gt;
+ ip address 172.16.1.1 255.255.255.252</pre>
+
+<h3>IPv6</h3>
+
+<p>The campus uses <code>2001:db8::/32</code>. The fourth hextet identifies the network and mirrors the IPv4 plan: the VLAN number for VLANs, <code>255</code> for loopbacks, and <code>250</code> for point-to-point links.</p>
+
+<h3>VLANs (<code>/64</code>)</h3>
+
+<table class="data-table">
+<thead><tr><th>VLAN</th><th>Prefix</th><th>DSW1</th><th>DSW2</th><th>Other</th></tr></thead>
+<tbody>
+<tr><td>10</td><td><code>2001:db8:0:10::/64</code></td><td><code>::1</code></td><td><code>::2</code></td><td></td></tr>
+<tr><td>20</td><td><code>2001:db8:0:20::/64</code></td><td><code>::1</code></td><td><code>::2</code></td><td></td></tr>
+<tr><td>30</td><td><code>2001:db8:0:30::/64</code></td><td><code>::1</code></td><td><code>::2</code></td><td></td></tr>
+<tr><td>40</td><td><code>2001:db8:0:40::/64</code></td><td><code>::1</code></td><td><code>::2</code></td><td>ASW1 <code>::3</code>, ASW2 <code>::4</code></td></tr>
+</tbody>
+</table>
+
+<h3>Loopbacks (<code>/128</code>)</h3>
+
+<table class="data-table">
+<thead><tr><th>Device</th><th>Loopback</th></tr></thead>
+<tbody>
+<tr><td>R1</td><td><code>2001:db8:0:255::1/128</code></td></tr>
+<tr><td>CSW1</td><td><code>2001:db8:0:255::2/128</code></td></tr>
+<tr><td>CSW2</td><td><code>2001:db8:0:255::3/128</code></td></tr>
+<tr><td>DSW1</td><td><code>2001:db8:0:255::4/128</code></td></tr>
+<tr><td>DSW2</td><td><code>2001:db8:0:255::5/128</code></td></tr>
+<tr><td>ASW1</td><td><code>2001:db8:0:255::6/128</code></td></tr>
+<tr><td>ASW2</td><td><code>2001:db8:0:255::7/128</code></td></tr>
+</tbody>
+</table>
+
+<h3>Point-to-Point Links (<code>/127</code>)</h3>
+
+<table class="data-table">
+<thead><tr><th>Link</th><th>R1</th><th>ISP</th></tr></thead>
+<tbody>
+<tr><td>R1 ↔ ISP</td><td><code>2001:db8:0:250::/127</code></td><td><code>2001:db8:0:250::1/127</code></td></tr>
+</tbody>
+</table>
+
+<p>Internal point-to-point links don't need global addresses — OSPFv3 runs over link-local addresses — so they only get <code>ipv6 enable</code>:</p>
+
+<pre>interface &lt;internal-p2p-interface&gt;
+ ipv6 enable</pre>
+
+<p>DSW1 has global addresses on its loopback and SVIs, with link-local only on its uplinks:</p>
+
+<img src="../images/network-fundamentals/image-6.png" alt="DSW1 show ipv6 interface brief" loading="lazy">
+
+<p>R1 has a global address only on its ISP link (Gi0/2) and its loopback:</p>
+
+<img src="../images/network-fundamentals/image-7.png" alt="R1 show ipv6 interface brief" loading="lazy">
+
+<p>The <code>/127</code> link to the ISP is up and the ISP side answers pings:</p>
+
+<img src="../images/network-fundamentals/image-8.png" alt="R1 Gi0/2 /127 link to ISP and ping test" loading="lazy">
 
 <h2>Routing</h2>
-<pre>! R1 — default routes toward the ISP
-ip route 0.0.0.0 0.0.0.0 172.16.1.2
-ipv6 route ::/0 2001:db8:0:250::1
 
-! Core bundle — no DR/BDR election, fast timers
-interface Port-channel1
+<h3>IPv4</h3>
+
+<h3>Default Route</h3>
+
+<p>R1 reaches 1.1.1.1 and anything else behind the ISP with a static default route (the ISP router can't be changed):</p>
+
+<pre>ip route 0.0.0.0 0.0.0.0 172.16.1.2</pre>
+
+<img src="../images/network-fundamentals/image-9.png" alt="R1 gateway of last resort" loading="lazy">
+
+<h3>OSPF</h3>
+
+<p>All VLANs, point-to-point links, and loopbacks must be reachable using a non-proprietary, fast-converging link-state protocol (OSPF) in a single area (area 0).</p>
+
+<p>OSPF can be enabled per interface:</p>
+
+<pre>interface &lt;interface&gt;
+ ip ospf 1 area 0</pre>
+
+<p>or with network statements:</p>
+
+<pre>router ospf 1
+ network &lt;ip-address&gt; &lt;wildcard&gt; area 0</pre>
+
+<p>On DSW1 and DSW2, every SVI is advertised:</p>
+
+<pre>interface range Vlan10, Vlan20, Vlan30, Vlan40
+ ip ospf 1 area 0</pre>
+
+<p>The distribution switches shouldn't form unnecessary adjacencies, so the user-facing VLANs are passive:</p>
+
+<pre>router ospf 1
+ passive-interface Vlan10
+ passive-interface Vlan20
+ passive-interface Vlan30</pre>
+
+<p>The core switches skip the DR/BDR election on their bundle and use fast hello/dead timers (5 s / 15 s):</p>
+
+<pre>interface Port-channel1
  ip ospf network point-to-point
  ip ospf hello-interval 5
  ip ospf dead-interval 15</pre>
-<ul>
-<li>OSPFv2 and OSPFv3 in a single area 0, with IPv4 loopbacks as router IDs</li>
-<li>User VLANs passive on the distribution switches to avoid unneeded adjacencies</li>
-<li>R1 originates the IPv6 default route into OSPFv3</li>
-</ul>
 
-<h2>Network services</h2>
+<h3>IPv6</h3>
+
+<h3>Default Route</h3>
+
+<pre>ipv6 route ::/0 2001:db8:0:250::1</pre>
+
+<h3>OSPFv3</h3>
+
+<p>Each device uses its IPv4 loopback address as the router ID, and everything is in a single area:</p>
+
+<pre>ipv6 unicast-routing
+ipv6 router ospf 1
+ router-id &lt;ipv4-loopback&gt;
+
+interface &lt;interface&gt;
+ ipv6 ospf 1 area 0</pre>
+
+<p>On DSW1 and DSW2, all SVIs and the loopback are in OSPFv3, with the user VLANs passive to avoid unneeded adjacencies:</p>
+
+<pre>ipv6 router ospf 1
+ passive-interface Vlan10
+ passive-interface Vlan20
+ passive-interface Vlan30</pre>
+
+<p>R1 advertises its default route into OSPFv3:</p>
+
+<pre>ipv6 router ospf 1
+ default-information originate</pre>
+
+<h2>Network Services</h2>
+
+<h3>HSRP (VLAN 10)</h3>
+
+<p>Users in VLAN 10 lost their gateway whenever DSW1 or DSW2 had stability issues. A virtual gateway, <code>10.0.0.3</code>, fixes this. DSW1 is preferred and takes the role back when it recovers.</p>
+
+<p>DSW1:</p>
+
+<pre>interface Vlan10
+ standby version 2
+ standby 1 ip 10.0.0.3
+ standby 1 priority 110
+ standby 1 preempt</pre>
+
+<p>DSW2:</p>
+
+<pre>interface Vlan10
+ standby version 2
+ standby 1 ip 10.0.0.3</pre>
+
+<p>DSW1 is Active with priority 110 and preempt:</p>
+
+<img src="../images/network-fundamentals/image-10.png" alt="DSW1 HSRP active" loading="lazy">
+
+<p>DSW2 is Standby:</p>
+
+<img src="../images/network-fundamentals/image-11.png" alt="DSW2 HSRP standby" loading="lazy">
+
+<h3>DHCP</h3>
+
+<p>R1 hands out addresses for VLAN 10 and VLAN 20.</p>
+
+<p>VLAN 10 — the HSRP virtual gateway, DNS 1.1.1.1, domain <code>MYDOMAIN.LOCAL</code>, and a 48-hour lease:</p>
+
+<pre>ip dhcp pool vlan10
+ network 10.0.0.0 255.255.255.128
+ default-router 10.0.0.3
+ dns-server 1.1.1.1
+ domain-name MYDOMAIN.LOCAL
+ lease 2</pre>
+
+<p>VLAN 20 — includes TFTP server <code>10.0.0.135</code> (option 150) for the IP phones:</p>
+
+<pre>ip dhcp pool vlan20
+ network 10.0.0.128 255.255.255.192
+ default-router 10.0.0.129
+ option 150 ip 10.0.0.135</pre>
+
+<p>R1 isn't on the VLANs, so DSW1 and DSW2 relay DHCP requests to it:</p>
+
+<pre>interface Vlan10
+ ip helper-address 10.0.250.2</pre>
+
+<p>To test, H1 and H2 have routing disabled and run a DHCP client on startup:</p>
+
+<pre>ip link set dev eth0 up
+dhclient eth0</pre>
+
+<p>H1 received <code>10.0.0.4/25</code>:</p>
+
+<img src="../images/network-fundamentals/image-12.png" alt="H1 DHCP address" loading="lazy">
+
+<p>H2 received <code>10.0.0.5/25</code>:</p>
+
+<img src="../images/network-fundamentals/image-13.png" alt="H2 DHCP address" loading="lazy">
+
+<h3>NAT</h3>
+
+<p>All campus switches and hosts need to reach 1.1.1.1. R1 overloads (PAT) the whole <code>10.0.0.0/8</code> range onto its ISP-facing address:</p>
+
+<pre>ip access-list standard NAT
+ permit 10.0.0.0 0.255.255.255
+
+interface &lt;outside-interface-to-ISP&gt;
+ ip nat outside
+
+interface &lt;inside-interface-to-campus&gt;
+ ip nat inside
+
+ip nat inside source list NAT interface &lt;outside-interface-to-ISP&gt; overload</pre>
+
+<p>H1 (<code>10.0.0.4</code>) is translated to <code>172.16.1.1</code> toward 1.1.1.1:</p>
+
+<img src="../images/network-fundamentals/image-14.png" alt="NAT translation on R1" loading="lazy">
+
+<h3>NTP</h3>
+
+<p>Logs were inconsistent across devices, so clocks are synced in a hierarchy that follows the topology.</p>
+
 <table class="data-table">
-<thead><tr><th>Service</th><th>Implementation</th></tr></thead>
+<thead><tr><th>Device</th><th>NTP servers</th></tr></thead>
 <tbody>
-<tr><td>HSRP</td><td>VLAN 10 virtual gateway 10.0.0.3 — DSW1 active (priority 110, preempt), DSW2 standby</td></tr>
-<tr><td>DHCP</td><td>Pools on R1 for VLAN 10 (DNS 1.1.1.1, MYDOMAIN.LOCAL, 48-hour lease) and VLAN 20 (TFTP option 150), relayed by the distribution SVIs</td></tr>
-<tr><td>NAT</td><td>PAT overload of 10.0.0.0/8 to R1's ISP-facing address</td></tr>
-<tr><td>NTP</td><td>Hierarchy following the topology: 1.1.1.1 → R1 → core → distribution → access</td></tr>
+<tr><td>R1</td><td><code>1.1.1.1</code></td></tr>
+<tr><td>CSW1, CSW2</td><td>R1 (<code>10.0.255.1</code>)</td></tr>
+<tr><td>DSW1</td><td>CSW2 (<code>10.0.255.3</code>), CSW1 (<code>10.0.255.2</code>)</td></tr>
+<tr><td>DSW2</td><td>CSW1 (<code>10.0.255.2</code>), CSW2 (<code>10.0.255.3</code>)</td></tr>
+<tr><td>ASW1</td><td>DSW1 (<code>10.0.255.4</code>), DSW2 (<code>10.0.255.5</code>)</td></tr>
+<tr><td>ASW2</td><td>DSW2 (<code>10.0.255.5</code>), DSW1 (<code>10.0.255.4</code>)</td></tr>
 </tbody>
 </table>
 
-<h2>Security &amp; management</h2>
-<ul>
-<li>Login banner on R1 and a MOTD on CSW1</li>
-<li>Port security on H1's port — one sticky MAC, shutdown on violation</li>
-<li>Extended ACL on the VLAN 10 SVIs blocking HTTP to 1.1.1.1 while allowing everything else</li>
-<li>SSH v2 only on CSW1 with a local user and encrypted passwords</li>
-<li>Syslog from DSW1, CDP tuned to 5 s / 60 s and disabled toward hosts and the ISP, and LLDP on the access layer (off on uplinks, receive-only toward hosts)</li>
-</ul>
+<pre>ntp server &lt;server-ip&gt;</pre>
+
+<h2>Security</h2>
+
+<h3>Banners</h3>
+
+<p>R1 shows "Authorized users only" at login:</p>
+
+<pre>username admin secret &lt;password&gt;
+line con 0
+ login local
+banner login #Authorized users only#</pre>
+
+<p>CSW1 shows a MOTD:</p>
+
+<pre>banner motd #This is CSW1#</pre>
+
+<h3>Port Security (ASW1 Gi1/0 → H1)</h3>
+
+<p>Only one MAC address is allowed, the first one learned is saved, and a violation shuts the port:</p>
+
+<pre>interface g1/0
+ switchport port-security
+ switchport port-security maximum 1
+ switchport port-security mac-address sticky
+ switchport port-security violation shutdown</pre>
+
+<h3>ACL — Block HTTP from VLAN 10</h3>
+
+<p>Hosts in VLAN 10 can't reach the HTTP server on 1.1.1.1; all other traffic is allowed. Applied on DSW1 and DSW2, inbound on the VLAN 10 SVI so traffic is filtered as close to the source as possible:</p>
+
+<pre>ip access-list extended BLOCK-V10-HTTP
+ deny tcp 10.0.0.0 0.0.0.127 host 1.1.1.1 eq 80
+ permit ip any any
+
+interface Vlan10
+ ip access-group BLOCK-V10-HTTP in</pre>
+
+<h3>SSH on CSW1</h3>
+
+<p>CSW1 accepts remote management over SSH only, with username <code>cisco</code> / password <code>cisco</code> (lab credentials). Telnet is blocked and passwords aren't stored in clear text.</p>
+
+<pre>username cisco privilege 15 secret cisco
+ip domain-name MYDOMAIN.LOCAL
+crypto key generate rsa modulus 2048
+ip ssh version 2
+service password-encryption
+
+line vty 0 4
+ login local
+ transport input ssh</pre>
+
+<p>H1 connects to CSW1's loopback over SSH and sees the "This is CSW1" MOTD. IOSv only offers older key exchange and host key algorithms, so the Linux client has to allow them explicitly:</p>
+
+<pre>ssh -o KexAlgorithms=+diffie-hellman-group14-sha1 -o HostKeyAlgorithms=+ssh-rsa cisco@10.0.255.2</pre>
+
+<img src="../images/network-fundamentals/image-16.png" alt="SSH from H1 to CSW1" loading="lazy">
+
+<h2>Network Management</h2>
+
+<h3>Syslog</h3>
+
+<p>DSW1 sends logs to an external syslog server:</p>
+
+<pre>logging 10.0.0.240</pre>
+
+<h3>CDP</h3>
+
+<p>Switches and R1 discover each other with CDP, sending every 5 seconds and discarding entries after 60 seconds:</p>
+
+<pre>cdp timer 5
+cdp holdtime 60</pre>
+
+<p>CDP isn't sent to hosts or the ISP. On those interfaces:</p>
+
+<pre>no cdp enable</pre>
+
+<h3>LLDP (access switches)</h3>
+
+<p>LLDP is turned on, but not used toward the distribution switches (CDP covers those). Toward hosts, the switch listens but doesn't advertise.</p>
+
+<pre>lldp run
+
+interface range g0/0-1
+ no lldp transmit
+ no lldp receive
+
+interface g1/0
+ no lldp transmit</pre>
+
+<p>Uplinks Gi0/0-1 have Tx and Rx disabled, and host port Gi1/0 only receives:</p>
+
+<img src="../images/network-fundamentals/image-15.png" alt="LLDP interface status on ASW2" loading="lazy">
 
 <h2>Verification</h2>
+
+<pre>show vlan brief
+show interfaces trunk
+show etherchannel summary
+show spanning-tree brief
+show spanning-tree interface &lt;int&gt; detail
+show errdisable recovery
+show ip interface brief
+show ipv6 interface brief
+show ip route
+show ipv6 route
+show ip ospf neighbor
+show ipv6 ospf neighbor
+show standby brief
+show ip dhcp binding
+show ip nat translations
+show ntp associations
+show port-security interface g1/0
+show access-lists
+show cdp neighbors
+show lldp interface</pre>
+
+<h3>Expected Result</h3>
+
 <ul>
-<li><code>show etherchannel summary</code> — LACP bundle on the distribution pair, static Layer 3 bundle on the core</li>
-<li><code>show spanning-tree brief</code> — DSW1 priority 0, DSW2 priority 28672 for every VLAN</li>
-<li><code>show standby brief</code> — DSW1 active, DSW2 standby for 10.0.0.3</li>
-<li>H1 and H2 received 10.0.0.4 and 10.0.0.5 from R1 through the DHCP relay</li>
-<li><code>show ip nat translations</code> — H1 translated to 172.16.1.1 toward 1.1.1.1</li>
-<li>SSH from H1 to CSW1's loopback shows the MOTD and lands in privileged mode</li>
+<li>VLANs, trunks, and both EtherChannels are up, and DSW1 is the root bridge for every VLAN with DSW2 as backup.</li>
+<li>Every VLAN, loopback, and point-to-point link is reachable over OSPF and OSPFv3, and R1 provides the default route to the ISP.</li>
+<li>H1 and H2 get addresses from R1 through the DHCP relay, use the HSRP gateway, and reach 1.1.1.1 through NAT — except for HTTP, which the ACL blocks.</li>
+<li>Clocks sync through the NTP hierarchy, and CSW1 accepts SSH only.</li>
 </ul>
 
-<h2>Lab files</h2>
-<p>The full write-up with every configuration step and screenshot, plus the CML topology file with the completed configs, are on <a href="https://github.com/Nic-DevOps/WilliamsLabs/tree/main/Network-Fundamentals-Lab" target="_blank" rel="noopener">GitHub</a>.</p>
+<h2>Lab File</h2>
+
+<p>The CML topology for this lab can be imported into Cisco Modeling Labs: <a href="https://github.com/Nic-DevOps/WilliamsLabs/blob/main/Network-Fundamentals-Lab/Network-Fundamentals-Lab.yaml" target="_blank" rel="noopener">Network-Fundamentals-Lab.yaml</a></p>
+
+<p>It includes all nodes and links with the completed configuration on R1 and every switch, the ISP router preconfigured (including the 1.1.1.1 loopback and NTP master), and the hosts set to use DHCP on boot.</p>
 
     </div>
 
