@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Group Policy Desktop Wallpaper · Williams Labs</title>
+<meta name="description" content="A Group Policy Object sets a company wallpaper for domain users in corp.williamslabs.ca, served from a read-only SMB share on the AD-01 domain controller.">
+<link rel="stylesheet" href="../css/style.css?v=20261016">
+<script src="../js/theme.js"></script>
+<style>
+  .prose img { display: block; max-width: 100%; height: auto; margin: 0 0 1.5rem; border-radius: 6px; border: 1px solid var(--border); }
+  .prose .data-table { display: block; overflow-x: auto; }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="nav-inner">
+    <a href="../index.html" class="brand"><span class="dot"></span>Williams Labs</a>
+    <nav class="main-nav">
+      <a href="../index.html">Home</a>
+      <a href="../index.html#projects">Projects</a>
+      <a href="../index.html#monitoring">Monitoring</a>
+      <a href="../index.html#technologies">Technologies</a>
+      <a href="https://github.com/Nic-DevOps/WilliamsLabs" target="_blank" rel="noopener">GitHub</a>
+      <div class="theme-toggle" id="theme-toggle" role="group" aria-label="Theme">
+        <span class="theme-toggle-thumb"></span>
+        <button type="button" class="theme-toggle-btn" data-theme-value="light" aria-label="Light mode">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+        </button>
+        <button type="button" class="theme-toggle-btn" data-theme-value="dark" aria-label="Dark mode">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </button>
+      </div>
+    </nav>
+  </div>
+</header>
+
+<section style="padding-top:3rem; padding-bottom:0; border-bottom:none;">
+  <div class="wrap">
+    <div class="breadcrumb"><a href="../index.html">Home</a> / <a href="../index.html#projects">Projects</a> / Group Policy Wallpaper</div>
+    <span class="status-pill complete">Complete</span>
+    <h1 style="font-size:2.1rem; letter-spacing:-0.02em; margin: 0.75rem 0 0;">Group Policy Desktop Wallpaper Deployment</h1>
+    <p style="color:var(--text-dim); font-size:1.05rem; max-width:680px; margin-top:0.75rem;">A Group Policy Object sets a company wallpaper for domain users in the corp.williamslabs.ca lab, served from a read-only share on the domain controller.</p>
+    <div class="meta-row">
+      <span><strong>Domain:</strong> corp.williamslabs.ca</span>
+      <span><strong>DC:</strong> AD-01, 10.10.20.50</span>
+      <span><strong>Status:</strong> Complete</span>
+    </div>
+  </div>
+</section>
+
+<section style="padding-top:0;">
+  <div class="wrap">
+    <div class="prose">
+
+<h2>Overview</h2>
+<table class="data-table">
+<thead><tr><th>Component</th><th>Detail</th></tr></thead>
+<tbody>
+<tr><td>Domain</td><td>corp.williamslabs.ca</td></tr>
+<tr><td>Domain controller</td><td>AD-01, Windows Server 2022, 10.10.20.50 (server VLAN)</td></tr>
+<tr><td>Test user</td><td>tuser1</td></tr>
+<tr><td>Policy</td><td>User Configuration &gt; Desktop &gt; Desktop Wallpaper</td></tr>
+<tr><td>Image location</td><td>\\AD-01\Wallpaper\WilliamsLabs Background.png</td></tr>
+</tbody>
+</table>
+
+<h2>Setup</h2>
+<p>The wallpaper must live on a path every client can read, so it sits on a share on AD-01 rather than a local folder.</p>
+
+<h3>1. Create the shared folder</h3>
+<p>Run in an elevated PowerShell on AD-01:</p>
+<pre>New-Item -Path "C:\Wallpaper" -ItemType Directory
+New-SmbShare -Name "Wallpaper" -Path "C:\Wallpaper" -ReadAccess "Domain Users","Domain Computers" -FullAccess "Administrators"</pre>
+
+<h3>2. Set NTFS permissions</h3>
+<p>Share permissions and NTFS permissions are both checked, and the stricter one wins. Read access was granted explicitly on the folder:</p>
+<pre>icacls "C:\Wallpaper" /grant "Domain Users:(OI)(CI)R" "Domain Computers:(OI)(CI)R"</pre>
+<p><code>icacls</code> confirmed <code>CORP\Domain Users</code> and <code>CORP\Domain Computers</code> hold <code>(OI)(CI)(R)</code>. The folder also inherited <code>BUILTIN\Users</code> create rights from <code>C:\</code>. The share is read-only, so this is low risk, and it can be removed with <code>icacls "C:\Wallpaper" /inheritance:d</code> followed by <code>/remove "BUILTIN\Users"</code>.</p>
+
+<h3>3. Create, configure and link the GPO</h3>
+<ol>
+<li>In <code>gpmc.msc</code>, create a GPO in the Group Policy Objects container, or create-and-link directly on the OU that holds the user accounts.</li>
+<li>Edit it: <strong>User Configuration &gt; Policies &gt; Administrative Templates &gt; Desktop &gt; Desktop &gt; Desktop Wallpaper</strong>.</li>
+<li>Set it to <strong>Enabled</strong>, wallpaper name <code>\\AD-01\Wallpaper\WilliamsLabs Background.png</code>, style <strong>Fill</strong>.</li>
+<li>Optional: enable <strong>Prevent changing desktop background</strong> under Control Panel &gt; Personalization.</li>
+</ol>
+
+<h2>Verification and results</h2>
+<p><code>gpupdate /force</code> completed and the wallpaper applied for the domain user after signing out and back in.</p>
+<p><code>gpresult /r /scope user</code> on the client confirms the policy came from the domain controller:</p>
+<table class="data-table">
+<thead><tr><th>Item</th><th>Result</th></tr></thead>
+<tbody>
+<tr><td>User</td><td>CORP\tuser1, in OU=Corp Users</td></tr>
+<tr><td>Policy applied from</td><td>AD-01.corp.williamslabs.ca</td></tr>
+<tr><td>Applied GPOs</td><td>Corp Users - Baseline, User - Desktop Wallpaper</td></tr>
+<tr><td>Filtered out</td><td>Local Group Policy (empty, expected)</td></tr>
+<tr><td>Slow link</td><td>No</td></tr>
+</tbody>
+</table>
+<img src="../images/gpo-wallpaper/client-desktop.png" alt="Domain client desktop showing the Williams Labs wallpaper applied by Group Policy" loading="lazy">
+
+    </div>
+
+    <div class="project-nav">
+      <a href="network-fundamentals.html">&larr; Network Fundamentals</a>
+      <a href="netbox.html">NetBox &rarr;</a>
+    </div>
+  </div>
+</section>
+
+<footer class="site-footer">
+  Williams Labs &middot; Infrastructure Lab
+</footer>
+
+</body>
+</html>
