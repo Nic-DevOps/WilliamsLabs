@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>NetBox — Infrastructure Source of Truth · Williams Labs</title>
-<meta name="description" content="NetBox 4.6.8 on Debian 13, standing up DCIM/IPAM as the infrastructure source of truth that will eventually feed Terraform, Ansible, and the monitoring stack.">
+<meta name="description" content="NetBox 4.6.8 on Debian 13, running in production behind Nginx and Gunicorn as the lab's infrastructure source of truth, with integrations still to come.">
 <link rel="stylesheet" href="../css/style.css?v=20261016">
 <script src="../js/theme.js"></script>
 </head>
@@ -37,11 +37,11 @@
     <div class="breadcrumb"><a href="../index.html">Home</a> / <a href="../index.html#projects">Projects</a> / NetBox</div>
     <span class="status-pill progress">In Progress</span>
     <h1 style="font-size:2.1rem; letter-spacing:-0.02em; margin: 0.75rem 0 0;">NetBox — Infrastructure Source of Truth</h1>
-    <p style="color:var(--text-dim); font-size:1.05rem; max-width:680px; margin-top:0.75rem;">Install and configure NetBox as the source of truth for device inventory and IP address management, feeding future Terraform/Ansible automation and the Prometheus/Grafana monitoring stack.</p>
+    <p style="color:var(--text-dim); font-size:1.05rem; max-width:680px; margin-top:0.75rem;">NetBox is up and running in the lab as a production service and is the source of truth for device inventory and IP address management. The integrations with automation and monitoring are still to come.</p>
     <div class="meta-row">
-      <span><strong>Host:</strong> netbox01, Debian 13.6</span>
-      <span><strong>Stack:</strong> Python 3.13.5 · PostgreSQL 17 · Redis 8.0.2</span>
-      <span><strong>Status:</strong> In Progress</span>
+      <span><strong>OS:</strong> Debian 13</span>
+      <span><strong>Stack:</strong> NetBox 4.6.8 · Nginx · Gunicorn · PostgreSQL 17 · Redis 8.0.2</span>
+      <span><strong>Status:</strong> Running, integrations in progress</span>
     </div>
   </div>
 </section>
@@ -51,25 +51,44 @@
     <div class="prose">
 
 <h2>Overview</h2>
-<p>A separate Debian VM (hostname <code>netbox01</code>) runs NetBox 4.6.8 as the planned infrastructure source of truth — device inventory (DCIM), IP address management (IPAM), and eventually virtualization tracking. The goal is for NetBox to feed both the Terraform/Ansible provisioning pipeline and device discovery for the Prometheus monitoring stack, rather than maintaining device lists by hand in multiple places.</p>
+<p>NetBox runs on its own Debian VM as the infrastructure source of truth for the lab: device inventory (DCIM) and IP address management (IPAM). It is up and running as a permanent service and is in day-to-day use. The goal is for NetBox to feed the automation and monitoring tools, so that device lists don't have to be kept by hand in several places.</p>
+
+<h2>How it got up and running</h2>
+<ol>
+<li><strong>Base install.</strong> Built a Debian 13 VM with a dedicated <code>netbox</code> service account. Installed PostgreSQL 17 and Redis, and installed NetBox 4.6.8 into a Python virtual environment.</li>
+<li><strong>Configuration.</strong> Set the database and Redis connections (one Redis database for tasks and one for the cache), a generated <code>SECRET_KEY</code>, and <code>API_TOKEN_PEPPERS</code> for API tokens.</li>
+<li><strong>Initialisation.</strong> Ran the database migrations, created the admin account, and collected the static files.</li>
+<li><strong>Smoke test.</strong> Checked that login and the dashboard worked using Django's development server, then turned <code>DEBUG</code> back off.</li>
+<li><strong>Production deployment.</strong> Replaced the development server with Gunicorn behind an Nginx reverse proxy, with systemd starting the service at boot.</li>
+<li><strong>Population.</strong> Entered the lab's sites, devices, VLANs, prefixes and infrastructure addresses. DHCP clients were left out because their addresses change. A scoped API token now gives scripted access through the REST API.</li>
+</ol>
 
 <h2>Stack</h2>
 <table class="data-table">
-<thead><tr><th>Component</th><th>Version</th></tr></thead>
+<thead><tr><th>Component</th><th>Role</th></tr></thead>
 <tbody>
-<tr><td>NetBox</td><td>4.6.8</td></tr>
-<tr><td>Python</td><td>3.13.5</td></tr>
-<tr><td>PostgreSQL</td><td>17</td></tr>
-<tr><td>Redis</td><td>8.0.2</td></tr>
+<tr><td>Nginx</td><td>Reverse proxy, serves static files</td></tr>
+<tr><td>Gunicorn</td><td>WSGI server running NetBox 4.6.8 (Python 3.13)</td></tr>
+<tr><td>PostgreSQL 17</td><td>Main database</td></tr>
+<tr><td>Redis 8.0.2</td><td>Task queue and cache</td></tr>
+<tr><td>systemd</td><td>Starts the service at boot and restarts it if it fails</td></tr>
 </tbody>
 </table>
 
+<h2>Lessons learned</h2>
+<ul>
+<li>In NetBox 4.6, <code>API_TOKEN_PEPPERS</code> must be a dictionary (<code>{1: '...'}</code>). A plain string fails with <code>ImproperlyConfigured</code>.</li>
+<li>The first migration failed with <code>permission denied for schema public</code>. PostgreSQL 15 and later no longer let every user create objects in the <code>public</code> schema, so the fix was to make the <code>netbox</code> role the owner of the database and the schema.</li>
+<li>Django's <code>runserver</code> is only for a quick test. NetBox needs a proper WSGI server and reverse proxy to run as a permanent service.</li>
+</ul>
 
-<h2>Status</h2>
-<p>The install is fully working end to end: database migrations completed, a superuser created, static files collected, and web login tested successfully against Django's development server.</p>
-
-<h2>Next stage</h2>
-<p>Move off the Django dev server onto a production deployment — Gunicorn behind Nginx, managed as a systemd service — then begin populating DCIM/IPAM data and wiring NetBox into device discovery for Grafana and Prometheus, deliberately kept out of the initial Lab 07/09 monitoring setup so that piece could be built and proven independently first.</p>
+<h2>Still to do</h2>
+<ul>
+<li><strong>Background worker.</strong> Enable and start the <code>netbox-rq</code> service. The web interface and API work without it, but jobs such as custom scripts, reports and webhooks won't run until it is running.</li>
+<li><strong>Ansible.</strong> Build the Ansible inventory from the NetBox API.</li>
+<li><strong>Terraform.</strong> Use NetBox data to drive provisioning.</li>
+<li><strong>Monitoring.</strong> Find Prometheus/Grafana targets through NetBox instead of a hand-kept list.</li>
+</ul>
 
     </div>
 
