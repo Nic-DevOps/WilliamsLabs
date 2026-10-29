@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Windows File Server · Williams Labs</title>
+<meta name="description" content="A domain-joined Windows Server 2022 file server, FS-01, with a dedicated data disk and SMB shares controlled by Active Directory security groups in corp.williamslabs.ca.">
+<link rel="stylesheet" href="../css/style.css?v=20261016">
+<script src="../js/theme.js"></script>
+<style>
+  .prose img { display: block; max-width: 100%; height: auto; margin: 0 0 1.5rem; border-radius: 6px; border: 1px solid var(--border); }
+  .prose .data-table { display: block; overflow-x: auto; }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="nav-inner">
+    <a href="../index.html" class="brand"><span class="dot"></span>Williams Labs</a>
+    <nav class="main-nav">
+      <a href="../index.html">Home</a>
+      <a href="../index.html#projects">Projects</a>
+      <a href="../index.html#monitoring">Monitoring</a>
+      <a href="../index.html#technologies">Technologies</a>
+      <a href="https://github.com/Nic-DevOps/WilliamsLabs" target="_blank" rel="noopener">GitHub</a>
+      <div class="theme-toggle" id="theme-toggle" role="group" aria-label="Theme">
+        <span class="theme-toggle-thumb"></span>
+        <button type="button" class="theme-toggle-btn" data-theme-value="light" aria-label="Light mode">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+        </button>
+        <button type="button" class="theme-toggle-btn" data-theme-value="dark" aria-label="Dark mode">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </button>
+      </div>
+    </nav>
+  </div>
+</header>
+
+<section style="padding-top:3rem; padding-bottom:0; border-bottom:none;">
+  <div class="wrap">
+    <div class="breadcrumb"><a href="../index.html">Home</a> / <a href="../index.html#projects">Projects</a> / Windows File Server</div>
+    <span class="status-pill complete">Complete</span>
+    <h1 style="font-size:2.1rem; letter-spacing:-0.02em; margin: 0.75rem 0 0;">Windows Server 2022 File Server (FS-01)</h1>
+    <p style="color:var(--text-dim); font-size:1.05rem; max-width:680px; margin-top:0.75rem;">A domain-joined file server on the server VLAN, with a dedicated data disk and SMB shares whose access is controlled by Active Directory security groups.</p>
+    <div class="meta-row">
+      <span><strong>Domain:</strong> corp.williamslabs.ca</span>
+      <span><strong>Server:</strong> FS-01, 10.10.20.51</span>
+      <span><strong>Status:</strong> Complete</span>
+    </div>
+  </div>
+</section>
+
+<section style="padding-top:0;">
+  <div class="wrap">
+    <div class="prose">
+
+<h2>Overview</h2>
+<p>FS-01 is built in VMware Workstation and sits on the server VLAN (10.10.20.0/24) next to the domain controller, AD-01. Data lives on its own disk, and a department share is controlled by an AD security group. A second, read-only share holds the desktop wallpaper used by the user GPO.</p>
+<table class="data-table">
+<thead><tr><th>Item</th><th>Value</th></tr></thead>
+<tbody>
+<tr><td>Hostname</td><td>FS-01</td></tr>
+<tr><td>OS</td><td>Windows Server 2022 Standard Evaluation (Desktop Experience)</td></tr>
+<tr><td>Hypervisor</td><td>VMware Workstation</td></tr>
+<tr><td>IP address</td><td>10.10.20.51/24, gateway 10.10.20.1</td></tr>
+<tr><td>DNS</td><td>10.10.20.50 (AD-01)</td></tr>
+<tr><td>Domain</td><td>corp.williamslabs.ca</td></tr>
+<tr><td>OS disk</td><td>60 GB</td></tr>
+<tr><td>Data disk</td><td>60 GB, volume <code>H:</code> (label <code>Data</code>)</td></tr>
+</tbody>
+</table>
+
+<h2>1. Install Windows Server</h2>
+<h3>Create the VM</h3>
+<p>Setup first failed with <em>"Windows cannot find the Microsoft Software License Terms"</em>. In VMware Workstation the usual cause is Easy Install, which passes an unattended answer file through a virtual floppy. The fix was to create the VM with <strong>"I will install the operating system later"</strong>, attach the ISO to the virtual DVD drive and remove the floppy device. The network adapter uses the VMnet that maps to the server VLAN, the same one as AD-01.</p>
+
+<h3>Setup screens</h3>
+<p>Selected <strong>Windows Server 2022 Standard Evaluation (Desktop Experience)</strong>:</p>
+<img src="../images/file-server/setup-edition.png" alt="Windows Server setup with Standard Evaluation (Desktop Experience) selected" loading="lazy">
+<p>Chose <strong>Custom: Install Microsoft Server operating system only</strong>. Upgrade is not available on a fresh VM.</p>
+<img src="../images/file-server/setup-custom.png" alt="Setup install type screen with the Custom option" loading="lazy">
+<p>Installed onto the 60 GB unallocated disk (Drive 0). Setup creates the partitions itself.</p>
+<img src="../images/file-server/setup-disk.png" alt="Setup disk selection showing the 60 GB unallocated drive" loading="lazy">
+<p>Setup then copies files and restarts several times. Don't press a key at the "Press any key to boot from CD or DVD" prompt on the reboots, or setup starts over.</p>
+<img src="../images/file-server/setup-restart.png" alt="Setup restarting to continue the installation" loading="lazy">
+<p>After the final reboot I set the local Administrator password and signed in (Ctrl+Alt+Insert in the VMware console).</p>
+
+<h2>2. Network configuration and domain join</h2>
+<p>Static IP in the server range, with DNS pointed at the domain controller:</p>
+<pre>New-NetIPAddress -InterfaceAlias "Ethernet0" -IPAddress 10.10.20.51 -PrefixLength 24 -DefaultGateway 10.10.20.1
+Set-DnsClientServerAddress -InterfaceAlias "Ethernet0" -ServerAddresses 10.10.20.50</pre>
+<p><code>Tentative</code> and <code>Invalid</code> address states right after the command are normal (duplicate address detection and the persistent copy of the setting). <code>Get-NetIPAddress</code> then showed <code>Preferred</code>, <code>Get-DnsClientServerAddress</code> showed 10.10.20.50, and the gateway answered pings.</p>
+<p>Before joining, I checked that the domain resolved:</p>
+<pre>nslookup corp.williamslabs.ca</pre>
+<p>It returned 10.10.20.50. The <code>DNS request timed out</code> / <code>Server: UnKnown</code> lines above the answer come from <code>nslookup</code> trying a reverse lookup of the DNS server, and AD-01 has no reverse lookup zone for 10.10.20.0/24 yet. It does not affect the join.</p>
+<p>Rename and join in one step:</p>
+<pre>Add-Computer -DomainName corp.williamslabs.ca -NewName FS-01 -Credential CORP\Administrator -Restart</pre>
+<p>Verification after signing in as <code>CORP\Administrator</code>:</p>
+<pre>whoami                                   # corp\administrator
+(Get-CimInstance Win32_ComputerSystem) | Select Name, Domain, PartOfDomain
+Test-ComputerSecureChannel -Verbose
+nltest /dsgetdc:corp.williamslabs.ca</pre>
+
+<h2>3. Data disk</h2>
+<p>A second 60 GB virtual disk (thin provisioned, stored in the VM's own folder so backups and moves take it along) appeared in Windows as Disk 1, <code>Offline</code> and <code>RAW</code>.</p>
+<p>D: was already taken by the virtual DVD drive, so <code>New-Partition -DriveLetter D</code> failed with <em>"The requested access path is already in use."</em> I used <strong>H:</strong> instead:</p>
+<pre>Set-Disk -Number 1 -IsOffline $false
+Set-Disk -Number 1 -IsReadOnly $false
+Initialize-Disk -Number 1 -PartitionStyle GPT
+New-Partition -DiskNumber 1 -DriveLetter H -UseMaximumSize |
+  Format-Volume -FileSystem NTFS -AllocationUnitSize 65536 -NewFileSystemLabel "Data"</pre>
+<p>A 64 KB allocation unit suits a volume of larger files. <code>Get-Volume -DriveLetter H</code> shows the result: NTFS, <code>Healthy</code>, about 60 GB.</p>
+<img src="../images/file-server/data-volume.png" alt="PowerShell output showing the H: Data volume as NTFS, Healthy, 59.98 GB" loading="lazy">
+
+<h2>4. File server roles</h2>
+<pre>Install-WindowsFeature FS-FileServer, FS-Resource-Manager, FS-DFS-Namespace, FS-DFS-Replication, RSAT-File-Services -IncludeManagementTools</pre>
+<p>The install completed with <code>Success: True</code> and no restart needed.</p>
+<img src="../images/file-server/roles-install.png" alt="Install-WindowsFeature output showing Success True and no restart needed" loading="lazy">
+
+<h2>5. Permissions model and the Dept share</h2>
+<h3>Group naming</h3>
+<p>Groups are named the same way as GPOs: broad to specific, so they sort and read naturally. A group name is <strong>what it is &gt; which resource &gt; access level</strong>, for example <code>Shares - Dept - Modify</code>. For more on naming conventions, see this <a href="https://www.reddit.com/r/activedirectory/comments/10g7c4p/naming_standards_for_the_gpo_objects/" target="_blank" rel="noopener">r/activedirectory thread on GPO naming standards</a>.</p>
+
+<h3>Create the group (on AD-01)</h3>
+<p>Created in Active Directory Users and Computers in the <strong>Groups</strong> OU: scope <strong>Domain local</strong>, type <strong>Security</strong>, with <code>tuser1</code> as a member.</p>
+<img src="../images/file-server/ad-group.png" alt="New Object - Group dialog creating Shares - Dept - Modify as a domain local security group" loading="lazy">
+<p>PowerShell equivalent:</p>
+<pre>New-ADGroup -Name "Shares - Dept - Modify" -SamAccountName "Shares - Dept - Modify" -GroupScope DomainLocal -GroupCategory Security -Path "OU=Groups,DC=corp,DC=williamslabs,DC=ca"
+Add-ADGroupMember -Identity "Shares - Dept - Modify" -Members tuser1</pre>
+
+<h3>Create the folder, share and NTFS permissions (on FS-01)</h3>
+<pre>New-Item H:\Shares\Dept -ItemType Directory
+
+New-SmbShare -Name Dept -Path H:\Shares\Dept `
+  -FullAccess "CORP\Domain Admins" `
+  -ChangeAccess "CORP\Shares - Dept - Modify" `
+  -FolderEnumerationMode AccessBased
+
+icacls H:\Shares\Dept /inheritance:r
+icacls H:\Shares\Dept /grant "CORP\Domain Admins:(OI)(CI)F" "SYSTEM:(OI)(CI)F" "CORP\Shares - Dept - Modify:(OI)(CI)M"</pre>
+<img src="../images/file-server/dept-share.png" alt="PowerShell output creating the Dept folder, SMB share and NTFS permissions" loading="lazy">
+
+<h3>Design notes</h3>
+<ul>
+<li><strong>Share name vs. path.</strong> The share is named <code>Dept</code> but points at <code>H:\Shares\Dept</code>. Clients only see <code>\\FS-01\Dept</code>, so the server's disk layout stays hidden and the folder can move later without changing any GPO or drive mapping.</li>
+<li><strong>Two layers of permissions.</strong> Share permissions give Domain Admins full control and the group Change. NTFS permissions do the real restricting: inheritance is removed, and only Domain Admins, SYSTEM and the group are granted.</li>
+<li><strong>Access-based enumeration</strong> hides folders a user has no rights to.</li>
+<li>Permissions go to groups, never to individual users.</li>
+</ul>
+
+<h3>Test</h3>
+<p>On the Windows 11 client, <code>tuser1</code> signed out and back in (so the new group membership is in the logon token), opened <code>\\FS-01\Dept</code> and created a text file. The share appears under Network &gt; FS-01 &gt; Dept:</p>
+<img src="../images/file-server/client-dept-share.png" alt="File Explorer on the Windows 11 client showing a text file in the FS-01 Dept share" loading="lazy">
+<p>The file appeared in <code>H:\Shares\Dept</code> on FS-01, confirming that the share, the group and both permission layers work end to end.</p>
+
+<h2>6. Wallpaper share for the desktop GPO</h2>
+<p>The <a href="gpo-wallpaper.html">desktop wallpaper GPO</a> originally pointed at a share on AD-01. A dedicated read-only share on FS-01 now serves the image from the file server instead:</p>
+<pre>New-Item H:\Shares\Wallpaper -ItemType Directory
+
+New-SmbShare -Name Wallpaper -Path H:\Shares\Wallpaper `
+  -FullAccess "CORP\Domain Admins" `
+  -ReadAccess "CORP\Domain Users" `
+  -FolderEnumerationMode AccessBased
+
+icacls H:\Shares\Wallpaper /inheritance:r
+icacls H:\Shares\Wallpaper /grant "CORP\Domain Admins:(OI)(CI)F" "SYSTEM:(OI)(CI)F" "CORP\Domain Users:(OI)(CI)RX"</pre>
+<p><code>Get-SmbShare</code> lists both <code>Dept</code> and <code>Wallpaper</code>. The GPO wallpaper path becomes:</p>
+<pre>\\FS-01\Wallpaper\WilliamsLabs Background.png</pre>
+<p>A UNC path uses the <strong>share name</strong>, not the local drive path, so <code>H:\Shares</code> never appears in it.</p>
+
+<h2>Still to do</h2>
+<ul>
+<li>Negative test: a user outside <code>Shares - Dept - Modify</code> should be denied or should not see <code>Dept</code>.</li>
+<li>Move FS-01 from the default Computers container into the <strong>Servers</strong> OU.</li>
+<li>Rename <code>User - Desktop Wallpaper</code> to match the naming convention (for example <code>Users - Operating System - Desktop Wallpaper</code>).</li>
+<li>Drive-mapping GPO so <code>Dept</code> appears as a drive letter.</li>
+<li>Shadow copies on <code>H:</code>, plus an optional FSRM quota on <code>Dept</code>.</li>
+<li>Hardening: disable SMBv1, require SMB signing through a GPO.</li>
+<li>Add FS-01 and its data disk to the 3-2-1-1-0 backups, and add FS-01 (10.10.20.51) to NetBox.</li>
+</ul>
+
+    </div>
+
+    <div class="project-nav">
+      <a href="gpo-wallpaper.html">&larr; Group Policy Wallpaper</a>
+      <a href="netbox.html">NetBox &rarr;</a>
+    </div>
+  </div>
+</section>
+
+<footer class="site-footer">
+  Williams Labs &middot; Infrastructure Lab
+</footer>
+
+</body>
+</html>
