@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SSH Setup · Williams Labs</title>
+<meta name="description" content="A guide to enabling SSH version 2 on Cisco IOS and IOS-XE switches with local authentication, loopback management, hardening and rollback.">
+<link rel="stylesheet" href="../css/style.css?v=20261016">
+<script src="../js/theme.js"></script>
+<style>
+  .prose .data-table { display: block; overflow-x: auto; }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="nav-inner">
+    <a href="../index.html" class="brand"><span class="dot"></span>Williams Labs</a>
+    <nav class="main-nav">
+      <a href="../index.html">Home</a>
+      <a href="../index.html#projects">Projects</a>
+      <a href="../index.html#monitoring">Monitoring</a>
+      <a href="../index.html#technologies">Technologies</a>
+      <a href="https://github.com/Nic-DevOps/WilliamsLabs" target="_blank" rel="noopener">GitHub</a>
+      <div class="theme-toggle" id="theme-toggle" role="group" aria-label="Theme">
+        <span class="theme-toggle-thumb"></span>
+        <button type="button" class="theme-toggle-btn" data-theme-value="light" aria-label="Light mode">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+        </button>
+        <button type="button" class="theme-toggle-btn" data-theme-value="dark" aria-label="Dark mode">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </button>
+      </div>
+    </nav>
+  </div>
+</header>
+
+<section style="padding-top:3rem; padding-bottom:0; border-bottom:none;">
+  <div class="wrap">
+    <div class="breadcrumb"><a href="../index.html">Home</a> / <a href="../index.html#projects">Projects</a> / SSH Setup</div>
+    <span class="status-pill complete">Complete</span>
+    <h1 style="font-size:2.1rem; letter-spacing:-0.02em; margin: 0.75rem 0 0;">SSH Setup for Cisco IOS Switches</h1>
+    <p style="color:var(--text-dim); font-size:1.05rem; max-width:680px; margin-top:0.75rem;">A guide to enabling SSH version 2 on a Cisco IOS or IOS-XE switch, so it can be managed remotely over its loopback with a local account instead of Telnet.</p>
+    <div class="meta-row">
+      <span><strong>Platform:</strong> Cisco IOS / IOS-XE</span>
+      <span><strong>Time:</strong> About 10 minutes per switch</span>
+      <span><strong>Status:</strong> Complete</span>
+    </div>
+  </div>
+</section>
+
+<section style="padding-top:0;">
+  <div class="wrap">
+    <div class="prose">
+
+<h2>Purpose and scope</h2>
+<p>To enable SSH version 2 on a Cisco IOS or IOS-XE switch so it can be managed remotely. It applies to any new or reset switch (access, distribution or lab) that has no SSH yet, and covers local-user authentication.</p>
+
+<h2>Prerequisites</h2>
+<p>SSH will not come up without a crypto-capable image and a reachable management address, so these are checked first:</p>
+<ul>
+<li>Console (or existing Telnet) access to the switch, with privileged EXEC (<code>enable</code>) rights</li>
+<li>A crypto-capable IOS image (the <code>k9</code> / universal image). <code>show version</code> should list K9 or crypto features.</li>
+<li>A loopback address for SSH management (for example <code>Loopback0</code> at <code>10.0.255.2/32</code>) that the routing protocol advertises</li>
+<li>A routed path from the admin PC's subnet to the switch loopbacks (for example via OSPF)</li>
+<li>A hostname, domain name and admin username and password decided in advance</li>
+<li>An SSH client on the admin PC (OpenSSH, PuTTY or Windows Terminal)</li>
+</ul>
+
+<h2>Procedure</h2>
+<p>The steps run in order from the console. The example values (<code>CSW1</code>, <code>lab.local</code>, <code>10.0.255.x</code>) are replaced with each switch's own.</p>
+
+<h3>1. Enter configuration mode</h3>
+<pre>enable
+configure terminal</pre>
+
+<h3>2. Set a hostname and domain name</h3>
+<p>RSA key generation fails while the hostname is still the default <code>Switch</code>.</p>
+<pre>hostname CSW1
+ip domain-name lab.local</pre>
+
+<h3>3. Create a local admin account</h3>
+<pre>username cisco privilege 15 secret &lt;strong-password&gt;</pre>
+
+<h3>4. Generate the RSA key pair</h3>
+<p>Use at least 2048 bits. If IOS asks whether to replace existing keys, answer <code>no</code> unless you mean to rotate them.</p>
+<pre>crypto key generate rsa modulus 2048</pre>
+
+<h3>5. Force SSH version 2 and set session limits</h3>
+<pre>ip ssh version 2
+ip ssh time-out 60
+ip ssh authentication-retries 3</pre>
+
+<h3>6. Give the switch a loopback for management</h3>
+<p>The routing protocol has to advertise the loopback so the admin PC can reach it.</p>
+<pre>interface Loopback0
+ ip address 10.0.255.2 255.255.255.255
+exit</pre>
+
+<h3>7. Lock the VTY lines to SSH with local login</h3>
+<p>This is done last so it cannot cut off an existing Telnet session partway through setup.</p>
+<pre>line vty 0 15
+ login local
+ transport input ssh
+ exec-timeout 10 0
+exit</pre>
+
+<h3>8. Save the configuration</h3>
+<pre>end
+copy running-config startup-config</pre>
+<p>Stay on the console until the verification tests pass.</p>
+
+<h2>Verification</h2>
+<p>SSH is working when the switch reports version 2.0 enabled and a login from a separate device succeeds.</p>
+<table class="data-table">
+<thead><tr><th>Check</th><th>Command</th><th>Expected result</th></tr></thead>
+<tbody>
+<tr><td>SSH enabled</td><td><code>show ip ssh</code></td><td><code>SSH Enabled - version 2.0</code></td></tr>
+<tr><td>RSA keys exist</td><td><code>show crypto key mypubkey rsa</code></td><td>Key named <code>CSW1.lab.local</code>, 2048 bits</td></tr>
+<tr><td>Loopback up</td><td><code>show ip interface brief</code></td><td><code>Loopback0</code> is up/up with its IP</td></tr>
+<tr><td>VTY config</td><td><code>show running-config | section line vty</code></td><td><code>login local</code> and <code>transport input ssh</code></td></tr>
+<tr><td>Active sessions</td><td><code>show ssh</code></td><td>Your session listed as <code>Session started</code>, version 2.0</td></tr>
+<tr><td>Reachability</td><td><code>ping 10.0.255.2</code> from the admin PC</td><td>Replies received</td></tr>
+</tbody>
+</table>
+<p>Then a real login is tested from a Linux machine, not the console. IOSv only offers older key exchange and host key algorithms, so the client has to allow them explicitly:</p>
+<pre>ssh cisco@10.0.255.2 -o KexAlgorithms=diffie-hellman-group14-sha1 -o HostKeyAlgorithms=ssh-rsa</pre>
+<p>A successful login lands at the <code>CSW1#</code> CLI.</p>
+
+<h2>Hardening</h2>
+<p>Once SSH works, these restrict who can reach it and stop secrets leaking. They are applied only after the verification tests pass.</p>
+<ul>
+<li><strong>Limit SSH to the management subnet</strong> with an ACL on the VTY lines:
+<pre>ip access-list standard MGMT-SSH
+ permit &lt;management subnet&gt; &lt;wildcard mask&gt;
+ deny any log
+line vty 0 15
+ access-class MGMT-SSH in</pre></li>
+<li><strong>Encrypt plain-text passwords</strong> still in the config, and add a legal banner:
+<pre>service password-encryption
+banner login #Authorized access only. Activity is logged.#</pre></li>
+<li><strong>Slow down brute-force attempts</strong> by locking out repeated failures:
+<pre>login block-for 120 attempts 5 within 60
+login on-failure log</pre></li>
+<li><strong>Remove unused local accounts</strong> and keep a single named admin per person where possible.</li>
+<li><strong>Back up the config</strong> after hardening with <code>copy running-config startup-config</code>, then archive a copy off the switch.</li>
+</ul>
+
+<h2>Rollback</h2>
+<p>If the change locks you out or breaks management access, revert from the console. Before starting, save the pre-change config with <code>copy running-config flash:pre-ssh.cfg</code>.</p>
+<ol>
+<li>If <code>copy running-config startup-config</code> has not been run yet, reload without saving: <code>reload</code>, answer <code>no</code> to saving, then confirm.</li>
+<li>If the config was already saved, restore the backup: <code>configure replace flash:pre-ssh.cfg force</code> (IOS-XE), or <code>copy flash:pre-ssh.cfg running-config</code>.</li>
+<li>To remove SSH only, run:
+<pre>configure terminal
+ crypto key zeroize rsa
+ no ip ssh version 2
+ line vty 0 15
+  transport input telnet ssh
+end
+copy running-config startup-config</pre></li>
+<li>Re-run <code>show ip ssh</code> and confirm the state matches what you intended.</li>
+</ol>
+<p>Zeroizing RSA keys deletes them permanently; they must be regenerated to bring SSH back.</p>
+
+    </div>
+
+    <div class="project-nav">
+      <a href="switch-config-backups.html">&larr; Switch Config Backups</a>
+      <a href="netbox.html">NetBox &rarr;</a>
+    </div>
+  </div>
+</section>
+
+<footer class="site-footer">
+  Williams Labs &middot; Infrastructure Lab
+</footer>
+
+</body>
+</html>
