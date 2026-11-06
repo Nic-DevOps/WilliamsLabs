@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Switch Config Backups · Williams Labs</title>
+<meta name="description" content="Nightly, pull-based backups of every Cisco IOS switch's running config with Ansible, Ansible Vault and a systemd timer on the lab's management VM.">
+<link rel="stylesheet" href="../css/style.css?v=20261016">
+<script src="../js/theme.js"></script>
+<style>
+  .prose img { display: block; max-width: 100%; height: auto; margin: 0 0 1.5rem; border-radius: 6px; border: 1px solid var(--border); }
+  .prose .data-table { display: block; overflow-x: auto; }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="nav-inner">
+    <a href="../index.html" class="brand"><span class="dot"></span>Williams Labs</a>
+    <nav class="main-nav">
+      <a href="../index.html">Home</a>
+      <a href="../index.html#projects">Projects</a>
+      <a href="../index.html#monitoring">Monitoring</a>
+      <a href="../index.html#technologies">Technologies</a>
+      <a href="https://github.com/Nic-DevOps/WilliamsLabs" target="_blank" rel="noopener">GitHub</a>
+      <div class="theme-toggle" id="theme-toggle" role="group" aria-label="Theme">
+        <span class="theme-toggle-thumb"></span>
+        <button type="button" class="theme-toggle-btn" data-theme-value="light" aria-label="Light mode">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+        </button>
+        <button type="button" class="theme-toggle-btn" data-theme-value="dark" aria-label="Dark mode">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </button>
+      </div>
+    </nav>
+  </div>
+</header>
+
+<section style="padding-top:3rem; padding-bottom:0; border-bottom:none;">
+  <div class="wrap">
+    <div class="breadcrumb"><a href="../index.html">Home</a> / <a href="../index.html#projects">Projects</a> / Switch Config Backups</div>
+    <span class="status-pill complete">Complete</span>
+    <h1 style="font-size:2.1rem; letter-spacing:-0.02em; margin: 0.75rem 0 0;">Nightly Cisco Switch Config Backups with Ansible</h1>
+    <p style="color:var(--text-dim); font-size:1.05rem; max-width:680px; margin-top:0.75rem;">A pull-based backup of every Cisco IOS switch's running config, run from the management VM by Ansible every night and on demand after planned changes.</p>
+    <div class="meta-row">
+      <span><strong>Tools:</strong> Ansible, Ansible Vault, systemd</span>
+      <span><strong>Targets:</strong> 6 Cisco IOS switches</span>
+      <span><strong>Status:</strong> Complete</span>
+    </div>
+  </div>
+</section>
+
+<section style="padding-top:0;">
+  <div class="wrap">
+    <div class="prose">
+
+<h2>Purpose and scope</h2>
+<p>The management VM connects out to each switch over SSH and saves its running config into a dated file, so the switches never need to know the VM's password. The legacy SSH options that older IOS needs live in the Ansible client settings, so the VM's own SSH server stays locked down.</p>
+<p>The design has three parts:</p>
+<ol>
+<li><strong>Pull backups with Ansible</strong> (<code>cisco.ios.ios_config</code> with <code>backup: true</code>).</li>
+<li><strong>Keep credentials out of commands</strong> (Ansible Vault plus a dedicated service account).</li>
+<li><strong>Run it on a schedule</strong> (a systemd timer nightly, and on demand after planned changes).</li>
+</ol>
+
+<h2>Prerequisites</h2>
+<p>An Ansible control node (the VM) that can reach each switch's management IP over SSH (TCP 22).</p>
+<table class="data-table">
+<thead><tr><th>Item</th><th>Requirement</th></tr></thead>
+<tbody>
+<tr><td>Control node</td><td>Linux VM with Ansible core 2.14+ and Python 3</td></tr>
+<tr><td>Collections</td><td><code>cisco.ios</code> and <code>ansible.netcommon</code></td></tr>
+<tr><td>Run-as user</td><td>The existing non-root login, <code>provisiong</code></td></tr>
+<tr><td>Project folder</td><td><code>~/Ansible/Lab</code> (already holds <code>ansible.cfg</code>, <code>inventory.yml</code>, <code>show.yml</code>, <code>vlan.yml</code>); backups go in <code>~/Backups</code></td></tr>
+<tr><td>Switch access</td><td>SSH enabled and reachable from the VM's IP</td></tr>
+</tbody>
+</table>
+<p>Install the collections and create the folder layout:</p>
+<pre>ansible-galaxy collection install cisco.ios ansible.netcommon
+cd ~/Ansible/Lab
+mkdir -p group_vars/switches ~/Backups
+chmod 700 ~/Backups</pre>
+<p>Backups contain password hashes and sometimes reversible passwords, so <code>~/Backups</code> is readable only by the service user. Everything, including the nightly job, runs as <code>provisiong</code>, so no <code>sudo</code> or extra user is needed at run time.</p>
+
+<h2>1. Service account on the switches</h2>
+<p>Each switch gets one dedicated account, so the personal <code>cisco</code> login is never used by automation. This is pushed once by hand (or with a one-off Ansible run using a personal login):</p>
+<pre>conf t
+ username ansible privilege 15 secret &lt;STRONG-PASSWORD&gt;
+ !
+end
+wr</pre>
+<ul>
+<li><code>privilege 15</code> lets the account run <code>show running-config</code> without an <code>enable</code> step. Where policy forbids that, a custom privilege level or TACACS+ command authorization limited to <code>show</code> commands does the same job.</li>
+<li>Restricting the VTY lines to the VM's IP means a leaked password is useless from anywhere else.</li>
+<li>The password is unique to this account and generated by a password manager.</li>
+</ul>
+
+<h2>2. Credentials in Ansible Vault</h2>
+<p>The switch password lives in an encrypted vault file, and a separate vault password file lets the scheduled job decrypt it unattended. Nothing sensitive appears on a command line or in shell history.</p>
+<p>Create the vault password file, readable only by <code>provisiong</code>:</p>
+<pre>cd ~/Ansible/Lab
+openssl rand -base64 32 &gt; .vault_pass
+chmod 600 .vault_pass</pre>
+<p>Create the encrypted variables file:</p>
+<pre>ansible-vault create group_vars/switches/vault.yml --vault-password-file .vault_pass</pre>
+<p>Its contents (encrypted on save):</p>
+<pre>vault_switch_password: "&lt;STRONG-PASSWORD&gt;"</pre>
+<p>Then point the existing <code>ansible.cfg</code> at the vault password file under <code>[defaults]</code>, keeping the lines already there:</p>
+<pre>[defaults]
+vault_password_file = /home/provisiong/Ansible/Lab/.vault_pass</pre>
+<p>A copy of <code>.vault_pass</code> is kept in a password manager. Losing it means re-creating the vault; leaking it defeats the encryption, so it is never committed to git.</p>
+
+<h2>3. Inventory and connection settings</h2>
+<p>The existing inventory already has every switch in one <code>switches</code> group:</p>
+<pre>all:
+  children:
+    switches:
+      hosts:
+        CSW1:
+          ansible_host: 10.0.255.2
+        CSW2:
+          ansible_host: 10.0.255.3
+        DSW1:
+          ansible_host: 10.0.255.4
+        DSW2:
+          ansible_host: 10.0.255.5
+        ASW1:
+          ansible_host: 10.0.255.6
+        ASW2:
+          ansible_host: 10.0.255.7</pre>
+<p>Group variables apply to every playbook that targets the group, so the connection settings below also change how <code>show.yml</code> and <code>vlan.yml</code> log in. Those either move to the <code>ansible</code> account as well, or the backup uses a separate group (for example <code>backup_switches</code>) listing the same hosts.</p>
+<p>The connection settings go in <code>group_vars/switches/switches.yml</code>, next to the vault file:</p>
+<pre>ansible_connection: ansible.netcommon.network_cli
+ansible_network_os: cisco.ios.ios
+ansible_user: ansible
+ansible_password: "{{ vault_switch_password }}"
+ansible_ssh_common_args: &gt;-
+  -o KexAlgorithms=+diffie-hellman-group14-sha1
+  -o HostKeyAlgorithms=+ssh-rsa
+  -o PubkeyAcceptedAlgorithms=+ssh-rsa
+  -o Ciphers=+aes128-cbc,aes256-cbc</pre>
+<p>The legacy key exchange and cipher options are scoped to Ansible's SSH client, so the VM's own SSH server is never loosened. Both variable files are now in place:</p>
+<img src="../images/switch-backups/group-vars.png" alt="Terminal listing group_vars/switches showing switches.yml and vault.yml" loading="lazy">
+<p>One thing to watch: <code>network_cli</code> uses the paramiko library by default, which may not read <code>ansible_ssh_common_args</code> (that variable is meant for the OpenSSH client). If the first test fails with key exchange or cipher errors, that is the place to look.</p>
+
+<h2>4. The backup playbook</h2>
+<p><code>~/Ansible/Lab/backup.yml</code>, next to <code>show.yml</code> and <code>vlan.yml</code>. Each switch's config is written to a dated file under <code>~/Backups/&lt;hostname&gt;/</code>.</p>
+<pre>---
+- name: Back up Cisco IOS running configs
+  hosts: switches
+  gather_facts: false
+  vars:
+    backup_root: "/home/provisiong/Backups"
+    stamp: "{{ lookup('pipe', 'date +%Y-%m-%d_%H%M') }}"
+
+  tasks:
+    - name: Pull running-config
+      cisco.ios.ios_config:
+        backup: true
+        backup_options:
+          dir_path: "{{ backup_root }}/{{ inventory_hostname }}"
+          filename: "{{ inventory_hostname }}_{{ stamp }}.cfg"
+      no_log: true</pre>
+<p><code>no_log: true</code> keeps the config, which can contain secrets, out of the run log. It is removed temporarily only when debugging.</p>
+
+<h2>5. Test by hand before scheduling</h2>
+<p>One switch first, then all of them:</p>
+<pre>cd ~/Ansible/Lab
+ansible-playbook backup.yml --limit DSW1
+ansible-playbook backup.yml</pre>
+<p>Confirm there is a non-empty file per switch:</p>
+<pre>ls -l ~/Backups/*/ | tail -n 20
+grep -c '^hostname' ~/Backups/DSW1/*.cfg</pre>
+<p>Compare two runs to confirm only real changes show up:</p>
+<pre>diff ~/Backups/DSW1/&lt;older&gt;.cfg ~/Backups/DSW1/&lt;newer&gt;.cfg</pre>
+<p>A <code>Building configuration...</code> or timestamp line may differ between runs; everything else should match unless someone changed the switch.</p>
+
+<h2>6. Schedule it nightly and after changes</h2>
+<p>A systemd timer is used instead of cron because it logs to the journal, catches up after a missed run and can trigger an alert on failure.</p>
+<p><code>/etc/systemd/system/backup.service</code>:</p>
+<pre>[Unit]
+Description=Back up Cisco switch configs with Ansible
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=provisiong
+WorkingDirectory=/home/provisiong/Ansible/Lab
+ExecStart=/usr/bin/ansible-playbook backup.yml</pre>
+<p>systemd does not expand <code>~</code>, so every path is absolute. <code>ExecStart</code> must match what <code>which ansible-playbook</code> prints for <code>provisiong</code> (for a pip or pipx install that is often <code>/home/provisiong/.local/bin/ansible-playbook</code>).</p>
+<p><code>/etc/systemd/system/backup.timer</code>:</p>
+<pre>[Unit]
+Description=Nightly switch config backup
+
+[Timer]
+OnCalendar=*-*-* 02:00:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target</pre>
+<p>Enable it:</p>
+<pre>sudo systemctl daemon-reload
+sudo systemctl enable --now backup.timer
+systemctl list-timers backup.timer</pre>
+<p>The timer is active, with its first run scheduled for 02:00:</p>
+<img src="../images/switch-backups/timer.png" alt="systemctl list-timers output showing backup.timer scheduled for 02:00 and activating backup.service" loading="lazy">
+<p><strong>After a planned change</strong>, the same job runs on demand as the last step of the change checklist:</p>
+<pre>sudo systemctl start backup.service
+journalctl -u backup.service -n 50 --no-pager</pre>
+<p><strong>Cron alternative.</strong> The equivalent entry in <code>provisiong</code>'s crontab would be the line below. Use the timer or cron, never both.</p>
+<pre>0 2 * * * cd /home/provisiong/Ansible/Lab &amp;&amp; /usr/bin/ansible-playbook backup.yml &gt;&gt; /home/provisiong/Ansible/Lab/netbackup.log 2&gt;&amp;1</pre>
+
+<h2>Verification, retention and monitoring</h2>
+<p>A backup job that silently stops is the usual failure, so freshness gets checked weekly.</p>
+<ul>
+<li><strong>Freshness check:</strong> every switch should have a file from the last 24 hours.
+<pre>stale=0
+for d in ~/Backups/*/; do
+  [ -n "$(find "$d" -name '*.cfg' -mtime -1)" ] || { echo "STALE: $d"; stale=1; }
+done
+[ "$stale" -eq 0 ] &amp;&amp; echo "OK: all switches have a backup from the last 24h"</pre></li>
+<li><strong>Retention:</strong> configs older than 90 days are deleted by one extra line in the service file:
+<pre>ExecStartPost=/usr/bin/find /home/provisiong/Backups -name '*.cfg' -mtime +90 -delete</pre></li>
+<li><strong>Failure alert:</strong> <code>OnFailure=</code> on the service pointing at a unit that sends an email or push notification, or an uptime check that the newest file is under 26 hours old.</li>
+<li><strong>Off-VM copy:</strong> <code>~/Backups/</code> copied to a second location (NAS, cloud bucket or private git repo) so losing the VM does not lose the configs, encrypted if it leaves the network.</li>
+</ul>
+
+<h2>Restoring a config</h2>
+<p>Copy the chosen backup to the switch's <code>flash:</code> (<code>copy tftp:</code> or <code>scp</code>), then run <code>configure replace flash:&lt;file&gt; force</code> on supported IOS, or paste it into <code>conf t</code>. Review it with <code>diff</code> first, and remember that backup files may contain masked or hashed secrets that need re-entering.</p>
+
+    </div>
+
+    <div class="project-nav">
+      <a href="file-server.html">&larr; Windows File Server</a>
+      <a href="netbox.html">NetBox &rarr;</a>
+    </div>
+  </div>
+</section>
+
+<footer class="site-footer">
+  Williams Labs &middot; Infrastructure Lab
+</footer>
+
+</body>
+</html>
