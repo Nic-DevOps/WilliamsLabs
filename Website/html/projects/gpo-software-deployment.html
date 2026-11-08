@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GPO Software Deployment · Williams Labs</title>
+<meta name="description" content="A runbook for deploying MSI applications to domain-joined Windows machines with Group Policy Software Installation, from a central file share, with a pilot stage, upgrades and rollback.">
+<link rel="stylesheet" href="../css/style.css?v=20261016">
+<script src="../js/theme.js"></script>
+<style>
+  .prose img { display: block; max-width: 100%; height: auto; margin: 0 0 1.5rem; border-radius: 6px; border: 1px solid var(--border); }
+  .prose .data-table { display: block; overflow-x: auto; }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="nav-inner">
+    <a href="../index.html" class="brand"><span class="dot"></span>Williams Labs</a>
+    <nav class="main-nav">
+      <a href="../index.html">Home</a>
+      <a href="../index.html#projects">Projects</a>
+      <a href="../index.html#monitoring">Monitoring</a>
+      <a href="../index.html#technologies">Technologies</a>
+      <a href="https://github.com/Nic-DevOps/WilliamsLabs" target="_blank" rel="noopener">GitHub</a>
+      <div class="theme-toggle" id="theme-toggle" role="group" aria-label="Theme">
+        <span class="theme-toggle-thumb"></span>
+        <button type="button" class="theme-toggle-btn" data-theme-value="light" aria-label="Light mode">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+        </button>
+        <button type="button" class="theme-toggle-btn" data-theme-value="dark" aria-label="Dark mode">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </button>
+      </div>
+    </nav>
+  </div>
+</header>
+
+<section style="padding-top:3rem; padding-bottom:0; border-bottom:none;">
+  <div class="wrap">
+    <div class="breadcrumb"><a href="../index.html">Home</a> / <a href="../index.html#projects">Projects</a> / GPO Software Deployment</div>
+    <span class="status-pill complete">Complete</span>
+    <h1 style="font-size:2.1rem; letter-spacing:-0.02em; margin: 0.75rem 0 0;">Software Deployment via Group Policy</h1>
+    <p style="color:var(--text-dim); font-size:1.05rem; max-width:680px; margin-top:0.75rem;">A runbook for deploying MSI applications to domain-joined Windows machines in corp.williamslabs.ca with Group Policy, from a central file share, with a pilot stage, upgrades and a rollback path. Notepad++ is the example app.</p>
+    <div class="meta-row">
+      <span><strong>Platform:</strong> Windows Server 2022 / Active Directory</span>
+      <span><strong>Example app:</strong> Notepad++ 8.9.4 &rarr; 8.9.9</span>
+      <span><strong>Status:</strong> Complete</span>
+    </div>
+  </div>
+</section>
+
+<section style="padding-top:0;">
+  <div class="wrap">
+    <div class="prose">
+
+<h2>1. Purpose and approach</h2>
+<p>The goal is to deploy <code>.msi</code> apps to domain-joined Windows machines using Group Policy, from a central file share, with a test stage and a rollback path. GPO Software Installation offers three ways to deliver a package, and one is picked per app:</p>
+<table class="data-table">
+<thead><tr><th>Method</th><th>Where configured</th><th>When it installs</th><th>Best for</th></tr></thead>
+<tbody>
+<tr><td>Assigned to computer</td><td>Computer Configuration</td><td>At restart, before logon</td><td>Standard apps for every machine (Notepad++, web browser)</td></tr>
+<tr><td>Assigned to user</td><td>User Configuration</td><td>At logon (installs on first launch)</td><td>Per-user apps</td></tr>
+<tr><td>Published to user</td><td>User Configuration</td><td>User installs from Get Programs</td><td>Optional apps</td></tr>
+</tbody>
+</table>
+<p>This lab uses <strong>Assigned to computer</strong>, so Notepad++ installs on the test client at restart without any user action. Software Installation handles MSI packages only, and its settings cannot be created with the GroupPolicy PowerShell cmdlets, so the package is added in the GPMC console on AD-01.</p>
+<p><strong>Known limitations</strong> to plan around:</p>
+<ul>
+<li>Only MSI packages are supported natively.</li>
+<li>Installs cannot be scheduled, and many machines installing at once will load the file server, network and DCs.</li>
+<li>Install order inside one GPO cannot be changed; new packages install last.</li>
+<li>There is no central report of install success or failure. Each client's logs have to be checked.</li>
+<li>The GPO interface cannot pass custom MSI properties or license keys; that needs a transform (<code>.mst</code>), which this guide does not use.</li>
+</ul>
+
+<h2>2. Prerequisites and lab environment</h2>
+<p>Every item is confirmed before starting. Values below are from the lab.</p>
+<table class="data-table">
+<thead><tr><th>Item</th><th>Value / requirement</th><th>Check</th></tr></thead>
+<tbody>
+<tr><td>Domain</td><td>corp.williamslabs.ca (NetBIOS CORP)</td><td><code>Get-ADDomain</code></td></tr>
+<tr><td>Domain controller</td><td>AD-01, 10.10.20.50 (server VLAN 10.10.20.0/24)</td><td><code>dcdiag /q</code></td></tr>
+<tr><td>File server</td><td>Domain-joined Windows Server 2022 (FS-01)</td><td><code>Test-NetConnection FS-01 -Port 445</code></td></tr>
+<tr><td>Test client</td><td>Windows 11 in VLAN 10 (10.10.10.0/24), user tuser1, computer account in a test OU</td><td><code>nltest /dsgetdc:corp.williamslabs.ca</code></td></tr>
+<tr><td>DNS</td><td>AD-integrated DNS on the domain controller AD-01 (10.10.20.50)</td><td><code>nslookup corp.williamslabs.ca</code></td></tr>
+<tr><td>Routing / firewall</td><td>VLAN 10 can reach the file server on TCP 445 and the DC on the usual AD ports</td><td><code>Test-NetConnection</code> from the client</td></tr>
+<tr><td>Admin rights</td><td>Member of Domain Admins (or delegated GPO Creator Owners plus OU link rights)</td><td>GPMC</td></tr>
+<tr><td>Tools</td><td>GPMC and RSAT Active Directory modules on AD-01</td><td><code>Get-WindowsFeature GPMC</code></td></tr>
+</tbody>
+</table>
+<p>Existing OUs: Corp Computers, Corp Users, Domain Controllers, Groups, Servers. A child OU under Corp Computers holds pilot machines (<code>Corp Computers\Test</code>), so a bad package never reaches the whole fleet. GPOs and groups are named broad to specific, separated by <code>-</code>.</p>
+
+<h2>3. Build the software distribution share</h2>
+<p>Computers install the package at boot using their <strong>computer account</strong>, so the share must grant read access to Domain Computers, not just to users.</p>
+<ol>
+<li>On the file server, create <code>E:\Software Deployment</code> (on the Data volume, not the system drive).</li>
+<li>Create one folder per app and version: <code>E:\Software Deployment\Notepad++\8.9.4\npp.8.9.4.Installer.x64.msi</code>. A deployed file is never overwritten in place; a new version gets a new folder.</li>
+<li>Create two security groups in the Groups OU: <code>Shares - Software - Read</code> (members: <strong>Domain Computers</strong>) and <code>Shares - Software - Modify</code> (members: <strong>Administrators</strong>).</li>
+<li>Set NTFS permissions on <code>E:\Software Deployment</code> (disable inheritance, remove Users):
+<ul>
+<li><code>SYSTEM</code> and <code>Administrators</code>: Full control</li>
+<li><code>Shares - Software - Modify</code>: Modify</li>
+<li><code>Shares - Software - Read</code>: Read &amp; execute</li>
+</ul></li>
+</ol>
+<img src="../images/gpo-software/share-permissions.png" alt="Advanced Security Settings for E:\Software Deployment showing the Shares - Software - Modify and Read groups with Modify and Read &amp; execute access" loading="lazy">
+<ol start="5">
+<li>Create a hidden share, with share permissions set loosely and NTFS doing the real restriction:</li>
+</ol>
+<pre>$path = 'E:\Software Deployment'
+New-SmbShare -Name 'SoftwareDeployment$' -Path $path -FullAccess 'CORP\Domain Admins' -ReadAccess 'CORP\Domain Computers','NT AUTHORITY\Authenticated Users'</pre>
+<p><strong>What the share step does, and why it is needed:</strong></p>
+<ul>
+<li><code>New-SmbShare</code> publishes <code>E:\Software Deployment</code> on the network as <code>SoftwareDeployment$</code>, so clients reach it at <code>\\FS-01\SoftwareDeployment$</code>. The <code>$</code> keeps it out of network browse lists.</li>
+<li><code>-FullAccess</code> gives Domain Admins Full control on the share; <code>-ReadAccess</code> gives Domain Computers and Authenticated Users Read.</li>
+<li>The share itself is required. GPO Software Installation takes a UNC path to the MSI on a network share, and NTFS permissions alone do not make a folder reachable over the network.</li>
+</ul>
+<ol start="6">
+<li>Test the share from the test client as SYSTEM. SYSTEM reaches the network as the computer account, which is the identity the GPO install uses at boot, so a pass here means the install will be able to read the MSI. Run in an <strong>elevated</strong> PowerShell on the test client:</li>
+</ol>
+<pre>New-Item -ItemType Directory -Force C:\Temp | Out-Null
+$action = New-ScheduledTaskAction -Execute 'cmd.exe' -Argument '/c dir "\\FS-01\SoftwareDeployment$\Notepad++\8.9.4" &gt; C:\Temp\share-test.txt 2&gt;&amp;1'
+Register-ScheduledTask -TaskName 'ShareTest' -Action $action -User 'SYSTEM' -RunLevel Highest -Force | Out-Null
+Start-ScheduledTask -TaskName 'ShareTest'
+Start-Sleep 5
+Get-Content C:\Temp\share-test.txt
+Unregister-ScheduledTask -TaskName 'ShareTest' -Confirm:$false</pre>
+<p>A pass shows the test client's computer account can reach the share and list the folder, through both the share and NTFS permissions.</p>
+
+<h2>4. Prepare and verify the package</h2>
+<ol>
+<li>Download the installer from the vendor and record the source URL and version in the change record.</li>
+<li>Verify integrity against the vendor's published hash:
+<pre>Get-FileHash .\npp.8.9.4.Installer.x64.msi -Algorithm SHA256</pre></li>
+<li>Copy it to the deployment folder <code>E:\Software Deployment\Notepad++\8.9.4\</code>.</li>
+<li>Test a silent install locally, with logging, as an admin:
+<pre>msiexec /i "\\FS-01\SoftwareDeployment$\Notepad++\8.9.4\npp.8.9.4.Installer.x64.msi" /qn /l*v C:\Temp\npp-install.log</pre></li>
+</ol>
+<img src="../images/gpo-software/silent-install.png" alt="Windows 11 Start menu on the test client showing Notepad++ newly installed" loading="lazy">
+<ol start="5">
+<li>Confirm the app launches and uninstalls cleanly: <code>msiexec /x "\\FS-01\SoftwareDeployment$\Notepad++\8.9.4\npp.8.9.4.Installer.x64.msi" /qn</code>.</li>
+</ol>
+
+<h2>5. Groups, OUs and GPO naming</h2>
+<p>Two things control where an app installs:</p>
+<ul>
+<li><strong>The OU link</strong> (Test, then Corp Computers) decides where the GPO is eligible to apply. Every computer in that OU, and any OU below it, is evaluated. Linking to Test first and Corp Computers later is how the rollout is staged.</li>
+<li><strong>The security group</strong> (security filtering) decides which of those computers actually install the app. A computer in the OU but not in <code>Software - Notepad - Install</code> ignores the GPO.</li>
+</ul>
+<p>A computer installs the app only when it is in a linked OU <strong>and</strong> in the group. Each app gets its own group and its own GPO.</p>
+<ol>
+<li>Create a group per app in the Groups OU: <code>Software - Notepad - Install</code> (scope: Global, type: Security). Members are <strong>computer accounts</strong>.</li>
+<li>Add the test client computer first.</li>
+</ol>
+<img src="../images/gpo-software/install-group.png" alt="Active Directory Administrative Center adding the test client computer to the Software - Notepad - Install group" loading="lazy">
+
+<h2>6. Create the GPO and assign the MSI</h2>
+<table class="data-table">
+<thead><tr><th>Object</th><th>Name / location</th><th>Purpose</th></tr></thead>
+<tbody>
+<tr><td>Test OU</td><td>Corp Computers\Test</td><td>Test machines; GPO linked here first</td></tr>
+<tr><td>Production OU</td><td>Corp Computers</td><td>GPO linked here after the test client passes</td></tr>
+<tr><td>Server OU</td><td>Servers</td><td>App GPOs not linked here unless the app is meant for servers</td></tr>
+<tr><td>Security group</td><td>Software - Notepad - Install</td><td>Security filtering target</td></tr>
+<tr><td>GPO</td><td>Computers - Application - Notepad</td><td>Holds the software installation package</td></tr>
+</tbody>
+</table>
+<p>One GPO per application keeps rollback simple: one GPO can be unlinked or disabled without affecting others.</p>
+
+<h3>Create and link the GPO on AD-01</h3>
+<ol>
+<li>Open <strong>Group Policy Management</strong>: Server Manager &gt; Tools &gt; Group Policy Management, or run <code>gpmc.msc</code>.</li>
+<li>Expand Forest: corp.williamslabs.ca &gt; Domains &gt; corp.williamslabs.ca &gt; Corp Computers, and select the <strong>Test</strong> OU.</li>
+<li>Right-click <strong>Test</strong> and choose <strong>Create a GPO in this domain, and Link it here...</strong></li>
+<li>Name it <code>Computers - Application - Notepad</code>, leave Source Starter GPO as (none), and click OK. This creates the GPO and links it to the Test OU in one step.</li>
+<li>Check that the GPO now appears under the Test OU with a link icon.</li>
+</ol>
+<p>The same can be done with PowerShell on AD-01, in an elevated session:</p>
+<pre>New-GPO -Name 'Computers - Application - Notepad' -Comment 'Assigns Notepad++ 8.9.4 MSI. CHG-0001'
+New-GPLink -Name 'Computers - Application - Notepad' -Target 'OU=Test,OU=Corp Computers,DC=corp,DC=williamslabs,DC=ca'</pre>
+
+<h3>Restrict who it applies to</h3>
+<ol>
+<li>In GPMC, select Group Policy Objects &gt; <code>Computers - Application - Notepad</code> &gt; Scope tab &gt; Security Filtering. Remove <strong>Authenticated Users</strong>, then add <code>Software - Notepad - Install</code>.</li>
+<li>Go to the Delegation tab &gt; Add &gt; <strong>Authenticated Users</strong> (or Domain Computers) &gt; Read only. Without Read permission the computer cannot read the GPO, and it silently never applies (the MS16-072 change).</li>
+</ol>
+
+<h3>Assign the package</h3>
+<ol>
+<li>Right-click the GPO &gt; Edit.</li>
+<li>Go to Computer Configuration &gt; Policies &gt; Software Settings &gt; Software installation.</li>
+<li>Right-click &gt; New &gt; Package, and type the <strong>UNC path</strong> to the MSI (<code>\\FS-01\SoftwareDeployment$\Notepad++\8.9.4\npp.8.9.4.Installer.x64.msi</code>).</li>
+<li>Choose <strong>Advanced</strong> to set options, then OK. The properties window can take a moment to appear.</li>
+<li>On the Deployment tab, select deployment type <strong>Assigned</strong>.</li>
+</ol>
+<img src="../images/gpo-software/new-package.png" alt="Group Policy Management with the Computers - Application - Notepad GPO linked to the Test OU, filtered to the install group, and the editor's Software installation New Package menu" loading="lazy">
+
+<h2>7. Test, force and verify</h2>
+<p>Software Installation runs only at <strong>startup</strong> for computer assignments, so a reboot is required.</p>
+<ol>
+<li>On the test client, run <code>gpupdate /force</code>, then restart.</li>
+<li>Log in and verify:</li>
+</ol>
+<table class="data-table">
+<thead><tr><th>Check</th><th>Command / location</th><th>Expected</th></tr></thead>
+<tbody>
+<tr><td>GPO applied</td><td><code>gpresult /r /scope computer</code> or <code>rsop.msc</code></td><td>GPO listed under Applied Group Policy Objects</td></tr>
+<tr><td>Full report</td><td><code>gpresult /h C:\Temp\gp.html /f</code></td><td>Software Installation extension shows success</td></tr>
+<tr><td>App installed</td><td><code>Get-Package -Name 'Notepad++*'</code> or the Apps list</td><td>Correct version</td></tr>
+<tr><td>Install events</td><td>Event Viewer &gt; Windows Logs &gt; <strong>System</strong>, source <em>Application Management</em>; MSI detail in the Application log, source <em>MsiInstaller</em></td><td>Success events, no errors</td></tr>
+<tr><td>GP processing</td><td>Applications and Services Logs &gt; Microsoft &gt; Windows &gt; GroupPolicy &gt; Operational</td><td>No Software Installation CSE errors</td></tr>
+</tbody>
+</table>
+<ol start="3">
+<li>Leave the app on the pilot group for at least one reboot cycle and a few days of normal use.</li>
+<li>To go live, link the GPO to Corp Computers (or add more computers to the group), expanding the group in batches rather than all at once.</li>
+</ol>
+<p>Tip: enabling <em>Computer Configuration &gt; Administrative Templates &gt; System &gt; Display highly detailed status messages</em> on the test OU makes the client show "Installing managed software" at startup, so the install is visible as it happens.</p>
+
+<h2>8. Update, upgrade and remove software</h2>
+<h3>Upgrade to a new version</h3>
+<ol>
+<li>Copy the new MSI to a new version folder on the share; the old one is left untouched.</li>
+<li>Add the new package to the same GPO:
+<ol>
+<li>In GPMC, right-click <strong>Computers - Application - Notepad</strong> &gt; <strong>Edit</strong>.</li>
+<li>Go to Computer Configuration &gt; Policies &gt; Software Settings &gt; <strong>Software installation</strong>.</li>
+<li>Right-click &gt; New &gt; Package, and type the UNC path (no Browse): <code>\\FS-01\SoftwareDeployment$\Notepad++\8.9.9\npp.8.9.9.Installer.x64.msi</code></li>
+<li>Choose <strong>Advanced</strong>, then OK, and on the Deployment tab keep <strong>Assigned</strong>.</li>
+</ol></li>
+<li>On the new package's <strong>Upgrades</strong> tab, click Add, choose the old package from the same GPO, and select <em>Package can upgrade over the existing package</em>.</li>
+</ol>
+<img src="../images/gpo-software/upgrade-package.png" alt="Add Upgrade Package dialog with Notepad++ from the current GPO and Package can upgrade over the existing package selected" loading="lazy">
+<ol start="4">
+<li>Tick <strong>Required upgrade for existing packages</strong> so already-installed machines upgrade at next boot.</li>
+<li>Test on the test client first, with the same checks as Section 7: <code>gpresult /r /scope computer</code> lists the GPO, <code>Get-Package -Name 'Notepad++*'</code> shows the new version, and the System log shows success events with no errors.</li>
+</ol>
+<img src="../images/gpo-software/upgrade-event.png" alt="System log Event 306 from Application Management Group Policy: Notepad++ (x64) successfully upgraded Notepad++ from policy Computers - Application - Notepad" loading="lazy">
+<img src="../images/gpo-software/upgrade-version.png" alt="PowerShell Get-Package output showing Notepad++ (x64) version 8.9.9 installed from msi" loading="lazy">
+
+<h3>Remove software</h3>
+<ul>
+<li>If the package has <em>Uninstall this application when it falls out of the scope of management</em> ticked, remove the computer from the security group, or unlink the GPO. The app is uninstalled at the next reboot.</li>
+<li>Otherwise, right-click the package in the GPO &gt; All Tasks &gt; Remove &gt; <strong>Immediately uninstall the software from users and computers</strong>. The GPO stays in place until every machine has rebooted once, then the package is deleted.</li>
+<li>Deleting a package with <em>Allow users to continue to use the software</em> leaves the app installed but unmanaged.</li>
+</ul>
+<p><strong>Redeploy:</strong> to reinstall a package on every machine that already has it, right-click it &gt; All Tasks &gt; <strong>Redeploy application</strong>.</p>
+<p><strong>Packages are not edited in place.</strong> Deleting and re-adding a package can trigger reinstalls or conflicts, so a new package is added and supersedes the old one through the Upgrades tab.</p>
+
+<h2>9. Rollback, change control and sign-off</h2>
+<p><strong>Rollback</strong>, fastest first:</p>
+<ol>
+<li>Stop the spread: set the GPO link to <em>Disabled</em> or remove computers from the filtering group. Machines that have not yet rebooted will not install.</li>
+<li>Uninstall from machines already updated: use <em>Remove &gt; Immediately uninstall</em> on the package.</li>
+<li>Restore the previous version, whose folder is still on the share, by removing the new package rather than reversing the Upgrades relationship:
+<ol>
+<li>In the GPO's Software installation, make sure the 8.9.4 package is there and set to <strong>Assigned</strong>. If it was deleted, re-add it from its folder on the share.</li>
+<li>Right-click the <strong>8.9.9</strong> package &gt; All Tasks &gt; Remove &gt; <strong>Immediately uninstall the software from users and computers</strong>. This removes the 8.9.9 package and its upgrade link in one step.</li>
+<li>Restart the computers. 8.9.9 is uninstalled and the assigned 8.9.4 package installs. A computer may need a second restart, so confirm with <code>Get-Package -Name 'Notepad++*'</code>.</li>
+</ol></li>
+<li>Back up the GPO before each change with <code>Backup-GPO -Name 'Computers - Application - Notepad' -Path D:\GPOBackups</code>, and restore with <code>Restore-GPO</code> if the GPO is damaged. <code>E:\Software Deployment</code> is included in the disaster recovery backup plan.</li>
+</ol>
+
+<h3>Change record template</h3>
+<p>One per deployment:</p>
+<table class="data-table">
+<thead><tr><th>Field</th><th>Entry</th></tr></thead>
+<tbody>
+<tr><td>Change ID / date</td><td></td></tr>
+<tr><td>Application, version, vendor URL</td><td></td></tr>
+<tr><td>SHA-256 verified</td><td>Yes / No</td></tr>
+<tr><td>Package path (UNC)</td><td></td></tr>
+<tr><td>GPO name and linked OU</td><td></td></tr>
+<tr><td>Filtering group</td><td></td></tr>
+<tr><td>Pilot computers and result</td><td></td></tr>
+<tr><td>Production rollout date</td><td></td></tr>
+<tr><td>Rollback tested</td><td>Yes / No</td></tr>
+</tbody>
+</table>
+
+<h3>Sign-off checklist</h3>
+<ul>
+<li>Package hash verified and silent install tested manually</li>
+<li>Share and NTFS permissions tested as SYSTEM</li>
+<li>GPO named per convention, filtered by group, Read delegation present</li>
+<li>Pilot installed after one restart, with no errors in the event logs</li>
+<li>Upgrade and uninstall behaviour tested</li>
+<li>GPO backed up and change record filed</li>
+</ul>
+
+<h2>Sources</h2>
+<p>Checked against these pages on 2026-11-06 and 2026-11-07:</p>
+<ul>
+<li><a href="https://learn.microsoft.com/en-us/troubleshoot/windows-server/group-policy/use-group-policy-to-install-software" target="_blank" rel="noopener">Use Group Policy to remotely install software (Microsoft Learn)</a></li>
+<li><a href="https://www.manageengine.com/products/ad-manager/kb/gpo/how-to-install-software-via-gpo.html" target="_blank" rel="noopener">How to install software via GPO (ManageEngine)</a></li>
+<li><a href="https://woshub.com/deploy-software-via-gpo/" target="_blank" rel="noopener">Deploying MSI and EXE software via GPO (WindowsOS Hub)</a></li>
+<li><a href="https://technet.microsoft.com/library/cc753731.aspx" target="_blank" rel="noopener">Managing Permissions for Shared Folders (Microsoft TechNet)</a></li>
+<li><a href="https://www.dell.com/support/kbdoc/en-uk/000137238/understanding-file-and-folder-permissions-in-windows" target="_blank" rel="noopener">Understanding File and Folder Permissions in Windows (Dell)</a></li>
+</ul>
+
+    </div>
+
+    <div class="project-nav">
+      <a href="netbox.html">&larr; NetBox</a>
+      <a href="homelab-monitoring.html">Monitoring VM &rarr;</a>
+    </div>
+  </div>
+</section>
+
+<footer class="site-footer">
+  Williams Labs &middot; Infrastructure Lab
+</footer>
+
+</body>
+</html>
