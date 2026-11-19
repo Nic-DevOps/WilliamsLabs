@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Williams Labs</title>
 <meta name="description" content="Infrastructure, networking and DevOps portfolio — enterprise-style routing, switching, monitoring and automation labs, built and documented from the ground up.">
-<link rel="stylesheet" href="css/style.css?v=20261016">
+<link rel="stylesheet" href="css/style.css?v=20261119">
 <link rel="stylesheet" href="css/network-bg.css">
 <script src="js/theme.js"></script>
 </head>
@@ -679,135 +679,148 @@
   <div class="wrap">
     <h2 class="section-title">Projects</h2>
     <p class="section-desc">Each lab builds on the last — starting from basic routing and growing into a resilient, monitored, multi-site enterprise network.</p>
-    <div class="grid">
+    <div class="project-filters" id="project-filters" role="group" aria-label="Filter projects by topic">
+      <button type="button" class="filter-btn" data-filter="all" aria-pressed="true">All</button>
+      <button type="button" class="filter-btn" data-filter="networking" aria-pressed="false">Networking</button>
+      <button type="button" class="filter-btn" data-filter="active-directory" aria-pressed="false">Active Directory</button>
+      <button type="button" class="filter-btn" data-filter="group-policy" aria-pressed="false">Group Policy</button>
+      <button type="button" class="filter-btn" data-filter="powershell" aria-pressed="false">PowerShell</button>
+      <button type="button" class="filter-btn" data-filter="windows-server" aria-pressed="false">Windows Server</button>
+      <button type="button" class="filter-btn" data-filter="linux" aria-pressed="false">Linux</button>
+      <button type="button" class="filter-btn" data-filter="monitoring" aria-pressed="false">Monitoring</button>
+      <button type="button" class="filter-btn" data-filter="automation" aria-pressed="false">Automation</button>
+      <button type="button" class="filter-btn" data-filter="security" aria-pressed="false">Security</button>
+    </div>
+    <p class="filter-status" id="filter-status" aria-live="polite"></p>
+    <div class="grid" id="project-grid">
 
-      <a class="card" href="projects/01-basic-routing.html">
+      <a class="card" href="projects/01-basic-routing.html" data-topics="networking">
         <span class="status-pill complete">Complete</span>
         <h3>01 &middot; Basic Routing Lab</h3>
         <p>Four-LAN office network with a single router providing inter-VLAN connectivity and default gateways.</p>
         <div class="tags"><span class="tag">Cisco IOS</span><span class="tag">Routing</span></div>
       </a>
 
-      <a class="card" href="projects/02-redundant-switching.html">
+      <a class="card" href="projects/02-redundant-switching.html" data-topics="networking">
         <span class="status-pill complete">Complete</span>
         <h3>02 &middot; Redundant Switching, STP &amp; EtherChannel</h3>
         <p>Redundant mesh switching topology with STP loop prevention and LACP EtherChannel link aggregation.</p>
         <div class="tags"><span class="tag">STP</span><span class="tag">LACP</span></div>
       </a>
 
-      <a class="card" href="projects/03-vlan-trunking.html">
+      <a class="card" href="projects/03-vlan-trunking.html" data-topics="networking">
         <span class="status-pill complete">Complete</span>
         <h3>03 &middot; VLAN Trunking Lab</h3>
         <p>Logical segmentation into four department VLANs, extended across switches over 802.1Q trunks.</p>
         <div class="tags"><span class="tag">VLANs</span><span class="tag">802.1Q</span></div>
       </a>
 
-      <a class="card" href="projects/04-intervlan-routing.html">
+      <a class="card" href="projects/04-intervlan-routing.html" data-topics="networking">
         <span class="status-pill complete">Complete</span>
         <h3>04 &middot; Inter-VLAN Routing Lab</h3>
         <p>Router-on-a-stick design providing Layer 3 routing between VLANs via subinterfaces.</p>
         <div class="tags"><span class="tag">Router-on-a-Stick</span><span class="tag">SVI</span></div>
       </a>
 
-      <a class="card" href="projects/05-l3-hsrp.html">
+      <a class="card" href="projects/05-l3-hsrp.html" data-topics="networking">
         <span class="status-pill complete">Complete</span>
         <h3>05 &middot; Layer 3 Switching &amp; HSRP</h3>
         <p>Redundant multilayer core switches with SVIs and HSRP for highly available default gateways.</p>
         <div class="tags"><span class="tag">HSRP</span><span class="tag">L3 Switching</span></div>
       </a>
 
-      <a class="card" href="projects/06-multisite-static.html">
+      <a class="card" href="projects/06-multisite-static.html" data-topics="networking">
         <span class="status-pill complete">Complete</span>
         <h3>06 &middot; Multi-Site Static Routing</h3>
         <p>Extended the campus network to HQ, Site A and Site B over routed WAN links through a simulated ISP.</p>
         <div class="tags"><span class="tag">Static Routing</span><span class="tag">WAN</span></div>
       </a>
 
-      <a class="card" href="projects/07-monitoring.html">
+      <a class="card" href="projects/07-monitoring.html" data-topics="networking monitoring linux">
         <span class="status-pill complete">Complete</span>
         <h3>07 &middot; Network Monitoring</h3>
         <p>Prometheus + SNMP Exporter + Grafana stack deployed on a Debian VM to monitor the whole lab in real time.</p>
         <div class="tags"><span class="tag">Prometheus</span><span class="tag">Grafana</span><span class="tag">SNMP</span></div>
       </a>
 
-      <a class="card" href="projects/08-ospf.html">
+      <a class="card" href="projects/08-ospf.html" data-topics="networking">
         <span class="status-pill complete">Complete</span>
         <h3>08 &middot; OSPF Dynamic Routing</h3>
         <p>Replaced manually configured static routes with OSPF across HQ, Site A and Site B for automatic convergence.</p>
         <div class="tags"><span class="tag">OSPF</span><span class="tag">Area 0</span></div>
       </a>
 
-      <a class="card" href="projects/09-network-services.html">
+      <a class="card" href="projects/09-network-services.html" data-topics="networking linux">
         <span class="status-pill complete">Complete</span>
         <h3>09 &middot; Network Services</h3>
         <p>Centralized Kea DHCP with relay across sites, SSH management fleet-wide, and SNMP enabled everywhere so monitoring covers all three locations.</p>
         <div class="tags"><span class="tag">DHCP</span><span class="tag">SSH</span><span class="tag">SNMP</span><span class="tag">Kea</span></div>
       </a>
 
-      <a class="card" href="projects/10-active-directory.html">
+      <a class="card" href="projects/10-active-directory.html" data-topics="active-directory group-policy powershell windows-server">
         <span class="status-pill complete">Complete</span>
         <h3>10 &middot; Active Directory Lab</h3>
         <p>Windows Server 2022 domain controller with AD DS and DNS, a client joined from a separate routed VLAN, and user Group Policy applied end to end.</p>
         <div class="tags"><span class="tag">Active Directory</span><span class="tag">GPO</span><span class="tag">DNS</span></div>
       </a>
 
-      <a class="card" href="projects/network-fundamentals.html">
+      <a class="card" href="projects/network-fundamentals.html" data-topics="networking">
         <span class="status-pill complete">Complete</span>
         <h3>Network Fundamentals Lab</h3>
         <p>Standalone three-tier campus network in CML covering switching, VLSM and IPv6 addressing, OSPF, HSRP, DHCP, NAT, NTP, and access security end to end.</p>
         <div class="tags"><span class="tag">OSPFv3</span><span class="tag">IPv6</span><span class="tag">HSRP</span><span class="tag">NAT</span></div>
       </a>
 
-      <a class="card" href="projects/gpo-wallpaper.html">
+      <a class="card" href="projects/gpo-wallpaper.html" data-topics="group-policy active-directory powershell windows-server">
         <span class="status-pill complete">Complete</span>
         <h3>Group Policy Desktop Wallpaper</h3>
         <p>A GPO sets a company wallpaper for domain users, served from a read-only SMB share on the AD-01 domain controller and verified with gpresult.</p>
         <div class="tags"><span class="tag">GPO</span><span class="tag">Active Directory</span><span class="tag">SMB</span></div>
       </a>
 
-      <a class="card" href="projects/file-server.html">
+      <a class="card" href="projects/file-server.html" data-topics="active-directory powershell windows-server">
         <span class="status-pill complete">Complete</span>
         <h3>Windows File Server (FS-01)</h3>
         <p>A domain-joined Windows Server 2022 file server with a dedicated data disk and SMB shares controlled by AD security groups, tested end to end from a domain client.</p>
         <div class="tags"><span class="tag">Windows Server</span><span class="tag">Active Directory</span><span class="tag">SMB</span><span class="tag">NTFS</span></div>
       </a>
 
-      <a class="card" href="projects/switch-config-backups.html">
+      <a class="card" href="projects/switch-config-backups.html" data-topics="networking automation linux">
         <span class="status-pill complete">Complete</span>
         <h3>Nightly Switch Config Backups</h3>
         <p>Ansible pulls every Cisco IOS switch's running config each night into dated files, with credentials in Ansible Vault and a systemd timer driving the schedule.</p>
         <div class="tags"><span class="tag">Ansible</span><span class="tag">Cisco IOS</span><span class="tag">Vault</span><span class="tag">systemd</span></div>
       </a>
 
-      <a class="card" href="projects/ssh-setup.html">
+      <a class="card" href="projects/ssh-setup.html" data-topics="networking security">
         <span class="status-pill complete">Complete</span>
         <h3>SSH Setup for Cisco Switches</h3>
         <p>A guide to enabling SSH version 2 on Cisco IOS switches with local authentication over the loopback, plus verification, hardening and rollback steps.</p>
         <div class="tags"><span class="tag">Cisco IOS</span><span class="tag">SSH</span><span class="tag">Security</span></div>
       </a>
 
-      <a class="card" href="projects/netbox.html">
+      <a class="card" href="projects/netbox.html" data-topics="networking linux">
         <span class="status-pill complete">Complete</span>
         <h3>NetBox &middot; Installation</h3>
         <p>Installing NetBox 4.6.8 in production behind Nginx and Gunicorn as the lab's source of truth for infrastructure, IP addressing and devices.</p>
         <div class="tags"><span class="tag">NetBox</span><span class="tag">IPAM</span><span class="tag">DCIM</span></div>
       </a>
 
-      <a class="card" href="projects/gpo-software-deployment.html">
+      <a class="card" href="projects/gpo-software-deployment.html" data-topics="group-policy active-directory powershell windows-server">
         <span class="status-pill complete">Complete</span>
         <h3>Software Deployment via GPO</h3>
         <p>A runbook for assigning MSI apps to domain computers with Group Policy from a hidden file share, with a pilot OU, group filtering, upgrades and rollback.</p>
         <div class="tags"><span class="tag">GPO</span><span class="tag">Active Directory</span><span class="tag">MSI</span><span class="tag">SMB</span></div>
       </a>
 
-      <a class="card" href="projects/homelab-monitoring.html">
+      <a class="card" href="projects/homelab-monitoring.html" data-topics="monitoring automation linux">
         <span class="status-pill progress">In Progress</span>
         <h3>Monitoring VM &amp; Ansible</h3>
         <p>The Debian monitoring VM behind everything above — Prometheus, Grafana, and a planned Ansible playbook to rebuild it reproducibly.</p>
         <div class="tags"><span class="tag">Ansible</span><span class="tag">Debian</span><span class="tag">VMware</span></div>
       </a>
 
-      <div class="card">
+      <div class="card" data-topics="networking security">
         <span class="status-pill progress">In Progress</span>
         <h3>11 &middot; Firewall &amp; Security</h3>
         <p>ACLs, NAT, and zone-based firewall policy to control traffic between sites and VLANs.</p>
@@ -851,6 +864,7 @@
   Williams Labs &middot; Infrastructure Lab
 </footer>
 
+<script src="js/project-filter.js"></script>
 <script src="js/uptime.js"></script>
 <script src="js/network-bg.js"></script>
 </body>
