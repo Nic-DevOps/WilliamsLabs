@@ -11,14 +11,9 @@
   var inner = document.getElementById('network-bg-inner');
   if (!bg || !inner) return;
 
-  var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-  var svg = document.getElementById('network-bg-svg');
-  if (reduceMotion) {
-    // Stop SMIL <animate> pulses/dashes; leave the topology visible and static.
-    if (svg && typeof svg.pauseAnimations === 'function') svg.pauseAnimations();
-    return; // no scroll-linked parallax either
-  }
+  // Packet/pulse animations are pure CSS (see network-bg.css), which also
+  // handles prefers-reduced-motion for them. Here we only skip the parallax.
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
   var ticking = false;
   var maxTravel = 0;
@@ -55,14 +50,4 @@
 
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onResize, { passive: true });
-
-  // Pause everything when the tab isn't visible -- SMIL animations and the
-  // scroll listener both stop doing work.
-  document.addEventListener('visibilitychange', function () {
-    if (document.hidden) {
-      if (svg && typeof svg.pauseAnimations === 'function') svg.pauseAnimations();
-    } else {
-      if (svg && typeof svg.unpauseAnimations === 'function') svg.unpauseAnimations();
-    }
-  });
 })();

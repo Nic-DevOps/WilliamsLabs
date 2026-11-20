@@ -16,9 +16,17 @@
     costs nothing on layout/paint even on a low-end box.
   - Each connection is two paths: a thin static "wire" (#network-links, no
     animation) and a bolder dashed path riding on top of it that carries a
-    SMIL <animate> (flowing "packet"), plus a small fixed set of pulsing
-    hexagonal node halos. Animation count scales with link
-    count, but each is a cheap dashoffset animation with no layout/paint cost.
+    CSS dashoffset animation (flowing "packet"). Routers get a pulsing
+    hexagonal halo, switches a running dashed ring and servers blinking
+    activity lights with a light chasing round their corners; firewalls are
+    static (solid, bold cells). Each animated element sets its own duration (--d)
+    and a NEGATIVE delay (--o) inline, so every animation is already
+    mid-cycle on the first frame: nothing sits still waiting to start, and
+    neighbouring links stay out of phase. CSS animations (unlike the SMIL
+    <animate> elements used previously) start as soon as the element is
+    styled, not at the window load event, so slow third-party images such
+    as the uptime badges can't hold them back. Browsers also throttle them
+    in background tabs on their own.
   - prefers-reduced-motion disables both the scroll parallax and the
     pulse/dash animations; the network still renders as a static backdrop.
 */
@@ -87,15 +95,109 @@ html[data-theme="dark"] {
   );
 }
 
+/* Flowing packets: 7-unit dash every 62 units, sliding one period per cycle.
+   class="r" runs the packet the other way along the path. */
+#network-links-flow path {
+  stroke-dasharray: 7 55;
+  opacity: 0.8;
+  animation: nbg-flow var(--d, 0.5s) linear var(--o, 0s) infinite;
+}
+
+#network-links-flow path.r {
+  animation-direction: reverse;
+}
+
+@keyframes nbg-flow {
+  from { stroke-dashoffset: 0; }
+  to   { stroke-dashoffset: -62; }
+}
+
+/* Routers: a glowing hexagonal halo pulsing behind the cell. */
+#network-nodes-active polygon {
+  opacity: 0.45;
+  animation: nbg-pulse var(--d, 2s) ease-in-out var(--o, 0s) infinite;
+}
+
+@keyframes nbg-pulse {
+  0%, 100% { opacity: 0.45; }
+  50%      { opacity: 0.05; }
+}
+
+/* Switches: a dashed accent ring running around the cell (the polygon has
+   pathLength="120", so one 6+4 dash period is 10 units). */
+#network-switch-rings polygon {
+  fill: none;
+  stroke: var(--nbg-accent, #1D9E75);
+  stroke-width: 4.5;
+  stroke-dasharray: 6 4;
+  animation: nbg-ring var(--d, 2s) linear var(--o, 0s) infinite;
+}
+
+#network-switch-rings polygon.r {
+  animation-direction: reverse;
+}
+
+@keyframes nbg-ring {
+  from { stroke-dashoffset: 0; }
+  to   { stroke-dashoffset: -10; }
+}
+
+/* Servers: blinking activity lights. Each group of lights flickers on an
+   irregular on/off pattern (step-end, so it snaps like a real LED rather
+   than fading), and groups use different durations and offsets. */
+#network-server-leds g g {
+  animation: nbg-blink var(--d, 1.5s) step-end var(--o, 0s) infinite;
+}
+
+@keyframes nbg-blink {
+  0%   { opacity: 1; }
+  9%   { opacity: 0.15; }
+  16%  { opacity: 1; }
+  38%  { opacity: 0.15; }
+  44%  { opacity: 1; }
+  51%  { opacity: 0.15; }
+  73%  { opacity: 1; }
+  86%  { opacity: 0.15; }
+  92%  { opacity: 1; }
+}
+
+/* Servers: a light chasing round the 6 corners of the cell. Every corner
+   runs the same flash-then-fade cycle, offset by 1/6 of a cycle per corner
+   (--o), so the bright spot travels with a short fading tail behind it. */
+#network-server-chase circle {
+  opacity: 0.15;
+  animation: nbg-chase var(--d, 1.4s) linear var(--o, 0s) infinite;
+}
+
+@keyframes nbg-chase {
+  0%       { opacity: 1; }
+  35%, 100% { opacity: 0.15; }
+}
+
+/* Firewalls: solid, bold accent cell with the shield knocked out in the page
+   colour. The icon's colours are custom properties, which inherit into the
+   <use> copy, so swapping them here recolours just these icons. */
+#network-nodes polygon.fw {
+  fill: var(--nbg-accent, #1D9E75);
+  stroke: var(--nbg-accent, #1D9E75);
+  stroke-width: 6;
+  stroke-linejoin: round;
+}
+
+#network-nodes use.fw-icon {
+  --nbg-node: var(--bg, #0b0f0e);
+  --bg-page: var(--accent, #1D9E75);
+}
+
 @media (prefers-reduced-motion: reduce) {
   #network-bg-inner {
     transform: none !important;
   }
   #network-links-flow path,
-  #network-nodes-active polygon {
+  #network-nodes-active polygon,
+  #network-switch-rings polygon,
+  #network-server-leds g g,
+  #network-server-chase circle {
     animation: none;
-  }
-  #network-bg-svg animate {
-    display: none;
   }
 }
