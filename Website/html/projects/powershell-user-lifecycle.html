@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PowerShell Onboarding &amp; Offboarding · Williams Labs</title>
+<meta name="description" content="A runbook with three self-contained PowerShell scripts for the full Active Directory user lifecycle: onboarding from CSV, offboarding, and reactivation, with optional Microsoft 365 steps.">
+<link rel="stylesheet" href="../css/style.css?v=20261016">
+<script src="../js/theme.js"></script>
+<style>
+  .prose .data-table { display: block; overflow-x: auto; }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="nav-inner">
+    <a href="../index.html" class="brand"><span class="dot"></span>Williams Labs</a>
+    <nav class="main-nav">
+      <a href="../index.html">Home</a>
+      <a href="../index.html#projects">Projects</a>
+      <a href="../index.html#monitoring">Monitoring</a>
+      <a href="../index.html#technologies">Technologies</a>
+      <a href="https://github.com/Nic-DevOps/WilliamsLabs" target="_blank" rel="noopener">GitHub</a>
+      <div class="theme-toggle" id="theme-toggle" role="group" aria-label="Theme">
+        <span class="theme-toggle-thumb"></span>
+        <button type="button" class="theme-toggle-btn" data-theme-value="light" aria-label="Light mode">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+        </button>
+        <button type="button" class="theme-toggle-btn" data-theme-value="dark" aria-label="Dark mode">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </button>
+      </div>
+    </nav>
+  </div>
+</header>
+
+<section style="padding-top:3rem; padding-bottom:0; border-bottom:none;">
+  <div class="wrap">
+    <div class="breadcrumb"><a href="../index.html">Home</a> / <a href="../index.html#projects">Projects</a> / PowerShell Onboarding &amp; Offboarding</div>
+    <span class="status-pill complete">Complete</span>
+    <h1 style="font-size:2.1rem; letter-spacing:-0.02em; margin: 0.75rem 0 0;">PowerShell Onboarding &amp; Offboarding Runbook</h1>
+    <div class="meta-row">
+      <span><strong>Platform:</strong> Windows Server 2022 / Active Directory</span>
+      <span><strong>Scripts:</strong> New-Onboard.ps1 &middot; offboard.ps1 &middot; reactivate.ps1</span>
+      <span><strong>Date:</strong> 2026-11-15</span>
+      <span><strong>Status:</strong> Complete</span>
+    </div>
+  </div>
+</section>
+
+<section style="padding-top:0;">
+  <div class="wrap">
+    <div class="prose">
+
+<h2>Overview</h2>
+<p>This runbook gives three self-contained PowerShell scripts for the full user lifecycle in Active Directory (with optional Microsoft 365 steps): <code>New-Onboard.ps1</code> creates and provisions a user from a CSV row, and <code>offboard.ps1</code> disables, strips and archives one, and reactivate.ps1 restores one who returns. Each file carries its own settings, logging and helper functions, so you can copy either one on its own. Both support <code>-WhatIf</code>, log every action to a file, and default to the <code>corp.williamslabs.ca</code> domain, so edit the settings block at the top of each script to match your environment.</p>
+<p><strong>Prerequisites</strong></p>
+<ul>
+<li>Run on a domain-joined machine or the DC as an account that can create users, edit group membership and move objects in the target OUs.</li>
+<li>Windows PowerShell 5.1 or PowerShell 7 with the RSAT ActiveDirectory module (<code>Install-WindowsFeature RSAT-AD-PowerShell</code> on Server, or the RSAT optional feature on Windows 10/11).</li>
+<li>Optional: the <code>Microsoft.Graph</code> module (<code>Install-Module Microsoft.Graph -Scope CurrentUser</code>) for licence assignment and revocation, and an Exchange Online connection for mailbox conversion.</li>
+</ul>
+<p><strong>Safety notes</strong></p>
+<ul>
+<li>Test with <code>-WhatIf</code> first, then on a throwaway account, before touching real users.</li>
+<li>Never hard-code passwords. The onboarding script generates a random temporary password and forces a change at first logon.</li>
+<li>Offboarding is reversible by design: accounts are disabled and moved, not deleted. Delete only after your retention period.</li>
+</ul>
+
+<h2>Settings and CSV format</h2>
+<p>Neither script needs another file. Edit the <code>$Config</code> settings block at the top of each one (domain, OUs, file shares, groups) before the first run; the onboarding script also needs a CSV.</p>
+<p>Both scripts include built-in help. Run <code>Get-Help .\New-Onboard.ps1 -Full</code> or <code>Get-Help .\offboard.ps1 -Examples</code> to see the parameters and examples without opening the file.</p>
+<p>Onboarding reads one row per new hire from E:\Onboarding\<code>NewHires.csv</code>:</p>
+<pre>FirstName,LastName,Department,Title,Manager,StartDate
+Jane,Doe,Finance,Accountant,bjones,2026-12-01</pre>
+
+<h2>Onboarding script</h2>
+<p><code>New-Onboard.ps1</code> creates each user from the CSV, adds baseline and department groups, builds a permissioned home folder, and optionally assigns a Microsoft 365 licence. It prints temporary passwords once at the end and never writes them to the log.</p>
+<pre>&lt;#
+.SYNOPSIS
+Creates Active Directory users from a CSV file (self-contained onboarding).
+
+.DESCRIPTION
+For each CSV row this script creates the AD account with a unique username and a
+random temporary password (change forced at first logon), sets the manager if it
+exists, adds baseline and department groups, creates the user's private home folder
+with Modify rights for that user only, and optionally assigns a Microsoft 365 licence.
+Every action is written to the lifecycle log. Temporary passwords are shown once at
+the end and are never logged. Edit the $Config block below before the first run.
+
+.PARAMETER CsvPath
+Path to the CSV file. Required columns: FirstName, LastName, Department, Title,
+Manager, StartDate. Manager is a SamAccountName and may be blank or unknown.
+
+.PARAMETER AssignLicense
+Also assign the Microsoft 365 licence named in $Config.LicenseSku using Microsoft.Graph.
+The account must already have synced to Entra ID, so this is often a second pass.
+
+.EXAMPLE
+.\New-Onboard.ps1 -CsvPath E:\Onboarding\NewHires.csv -WhatIf
+Dry run: shows what would be created without changing anything.
+
+.EXAMPLE
+.\New-Onboard.ps1 -CsvPath E:\Onboarding\NewHires.csv
+Creates the accounts, groups and home folders.
+
+.EXAMPLE
+.\New-Onboard.ps1 -CsvPath E:\Onboarding\NewHires.csv -AssignLicense
+Creates the accounts and assigns the Microsoft 365 licence.
+
+.NOTES
+Supports the common -WhatIf and -Confirm parameters.
+Log: C:\Logs\Lifecycle\lifecycle-yyyyMM.log
+#&gt;
+#Requires -Modules ActiveDirectory
+[CmdletBinding(SupportsShouldProcess)]
+param(
+    [Parameter(Mandatory)][string]$CsvPath,
+    [switch]$AssignLicense
+)
+
+# ---------------- SETTINGS: edit for your environment ----------------
+$Config = @{
+    Domain         = 'corp.williamslabs.ca'
+    NetbiosName    = 'CORP'
+    Server         = 'AD-01.corp.williamslabs.ca'   # pin the DC
+    UpnSuffix      = 'williamslabs.ca'
+    UsersOU        = 'OU=Corp Users,DC=corp,DC=williamslabs,DC=ca'
+    HomeRoot       = '\\FS-01\Home$'
+    LogDir         = 'C:\Logs\Lifecycle'
+    BaselineGroups = @('All-Staff', 'VPN-Users')
+    DeptGroups     = @{            # Department -&gt; extra security groups
+        'IT'      = @('IT-Staff', 'Helpdesk')
+        'Finance' = @('Finance-Staff')
+        'Sales'   = @('Sales-Staff')
+    }
+    LicenseSku     = 'ENTERPRISEPACK'   # Microsoft 365 SKU part number
+}
+# ---------------------------------------------------------------------
+
+function Write-Log {
+    param(
+        [Parameter(Mandatory)][string]$Message,
+        [ValidateSet('INFO','WARN','ERROR')][string]$Level = 'INFO'
+    )
+    if (-not (Test-Path $Config.LogDir)) {
+        New-Item -ItemType Directory -Path $Config.LogDir -Force | Out-Null
+    }
+    $line = '{0:yyyy-MM-dd HH:mm:ss} [{1}] {2}' -f (Get-Date), $Level, $Message
+    Add-Content -Path (Join-Path $Config.LogDir "lifecycle-$(Get-Date -Format yyyyMM).log") -Value $line
+    switch ($Level) {
+        'WARN'  { Write-Warning $Message }
+        'ERROR' { Write-Host $line -ForegroundColor Red }
+        default { Write-Host $line }
+    }
+}
+
+function New-RandomPassword {
+    param([int]$Length = 16)
+    $chars = [char[]]'abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789!@#$%&amp;*'
+    $bytes = New-Object byte[] $Length
+    [System.Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($bytes)
+    -join ($bytes | ForEach-Object { $chars[$_ % $chars.Length] })
+}
+
+function Get-UniqueSam {
+    param([string]$First, [string]$Last)
+    $base = ($First.Substring(0,1) + $Last).ToLower() -replace '[^a-z0-9]', ''
+    $sam = $base; $i = 1
+    while (Get-ADUser -Filter "SamAccountName -eq '$sam'" -ErrorAction SilentlyContinue) {
+        $i++; $sam = "$base$i"
+    }
+    $sam
+}
+
+Import-Module ActiveDirectory -ErrorAction Stop
+$PSDefaultParameterValues['*-AD*:Server'] = $Config.Server
+
+if ($AssignLicense) {
+    Import-Module Microsoft.Graph.Users.Actions -ErrorAction Stop
+    Connect-MgGraph -Scopes 'User.ReadWrite.All','Organization.Read.All' -NoWelcome
+    $sku = Get-MgSubscribedSku | Where-Object SkuPartNumber -eq $Config.LicenseSku
+    if (-not $sku) { throw "Licence SKU '$($Config.LicenseSku)' not found." }
+}
+
+$results = foreach ($row in Import-Csv -Path $CsvPath) {
+    try {
+        $sam  = Get-UniqueSam -First $row.FirstName -Last $row.LastName
+        $upn  = "$sam@$($Config.UpnSuffix)"
+        $name = "$($row.FirstName) $($row.LastName)"
+        $pw   = New-RandomPassword
+
+        $params = @{
+            Name                  = $name
+            GivenName             = $row.FirstName
+            Surname               = $row.LastName
+            DisplayName           = $name
+            SamAccountName        = $sam
+            UserPrincipalName     = $upn
+            EmailAddress          = $upn
+            Department            = $row.Department
+            Title                 = $row.Title
+            Description           = "$($row.Title) - start $($row.StartDate)"
+            Path                  = $Config.UsersOU
+            AccountPassword       = (ConvertTo-SecureString $pw -AsPlainText -Force)
+            ChangePasswordAtLogon = $true
+            Enabled               = $true
+        }
+        if ($row.Manager) {
+            $mgr = Get-ADUser -Filter "SamAccountName -eq '$($row.Manager)'"
+            if ($mgr) { $params.Manager = $mgr.DistinguishedName }
+            else { Write-Log "Manager '$($row.Manager)' not found for $sam, continuing without a manager" 'INFO' }
+        }
+
+        if ($PSCmdlet.ShouldProcess($sam, 'Create AD user')) {
+            New-ADUser @params
+            Write-Log "Created $sam ($name), dept $($row.Department)"
+
+            # Groups
+            $groups = @($Config.BaselineGroups) + @($Config.DeptGroups[$row.Department])
+            foreach ($g in $groups | Where-Object { $_ }) {
+                try {
+                    Add-ADGroupMember -Identity $g -Members $sam
+                    Write-Log "Added $sam to $g"
+                } catch { Write-Log "Group '$g' failed for ${sam}: $_" 'WARN' }
+            }
+
+            # Home folder with Modify rights for the user only
+            $homePath = Join-Path $Config.HomeRoot $sam
+            New-Item -ItemType Directory -Path $homePath -Force | Out-Null
+            $acl  = Get-Acl $homePath
+            $rule = New-Object System.Security.AccessControl.FileSystemAccessRule(
+                "$($Config.NetbiosName)\$sam", 'Modify',
+                'ContainerInherit,ObjectInherit', 'None', 'Allow')
+            $acl.AddAccessRule($rule)
+            Set-Acl -Path $homePath -AclObject $acl
+            Set-ADUser -Identity $sam -HomeDirectory $homePath -HomeDrive 'H:'
+            Write-Log "Home folder created at $homePath"
+
+            # Optional Microsoft 365 licence (account must have synced to Entra ID first)
+            if ($AssignLicense) {
+                Set-MgUserLicense -UserId $upn `
+                    -AddLicenses @{ SkuId = $sku.SkuId } -RemoveLicenses @() | Out-Null
+                Write-Log "Assigned $($Config.LicenseSku) to $upn"
+            }
+        }
+
+        [pscustomobject]@{ User = $sam; UPN = $upn; TempPassword = $pw }
+    }
+    catch {
+        Write-Log "Onboarding failed for $($row.FirstName) $($row.LastName): $_" 'ERROR'
+    }
+}
+
+$results | Format-Table -AutoSize
+Write-Host 'Hand each temporary password over securely, then clear this window.' -ForegroundColor Yellow</pre>
+<p><strong>Usage</strong></p>
+<pre>.\New-Onboard.ps1 -CsvPath E:\Onboarding\NewHires.csv -WhatIf     # dry run
+.\New-Onboard.ps1 -CsvPath E:\Onboarding\NewHires.csv              # create accounts
+.\New-Onboard.ps1 -CsvPath E:\Onboarding\NewHires.csv -AssignLicense</pre>
+<p>The licence step only works after Entra Connect has synced the new user, so run <code>-AssignLicense</code> on a later pass if the account is not in the tenant yet.</p>
+
+<h2>Offboarding script</h2>
+<p><code>Offboard.ps1</code> locks a leaver out immediately and keeps everything needed to restore or audit the account. It saves the group list first, disables the account, scrambles the password, strips group membership, moves the object to the Disabled OU, and can archive the home folder and revoke Microsoft 365 access.</p>
+<pre>&lt;#
+.SYNOPSIS
+Offboards one or more users in Active Directory (self-contained).
+
+.DESCRIPTION
+Locks a leaver out and preserves everything needed to restore or audit the account.
+Steps in order: save the group list to a file, disable the account and reset it to a
+random 32-character password, stamp the description with the date and ticket, remove
+all groups except Domain Users, optionally archive the home folder, optionally revoke
+Microsoft 365 sessions and licences, then move the account to the Disabled OU.
+Nothing is deleted. Edit the $Config block below before the first run.
+
+.PARAMETER Identity
+One or more SamAccountNames, for example jdoe or jdoe,rroe.
+
+.PARAMETER Ticket
+Ticket or reference number recorded in the description and log. Default: N/A.
+
+.PARAMETER ArchiveHome
+Move the user's home folder to ArchiveRoot as &lt;sam&gt;_&lt;date&gt;.
+
+.PARAMETER RevokeM365
+Revoke Microsoft 365 sign-in sessions and remove licences using Microsoft.Graph.
+
+.EXAMPLE
+.\offboard.ps1 -Identity jdoe -Ticket INC-1042 -WhatIf
+Dry run: shows every step without changing anything.
+
+.EXAMPLE
+.\offboard.ps1 -Identity jdoe -Ticket INC-1042 -ArchiveHome -RevokeM365
+Full offboarding, prompting before each change.
+
+.EXAMPLE
+.\offboard.ps1 -Identity jdoe,rroe -Ticket INC-1050 -Confirm:$false
+Offboards two users with no confirmation prompts.
+
+.NOTES
+ConfirmImpact is High, so each step prompts unless -Confirm:$false is used or you
+answer Yes to All. Also supports -WhatIf.
+Log: C:\Logs\Lifecycle\lifecycle-yyyyMM.log
+Group backup: C:\Logs\Lifecycle\offboard-&lt;sam&gt;-&lt;date&gt;-groups.txt
+#&gt;
+#Requires -Modules ActiveDirectory
+[CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'High')]
+param(
+    [Parameter(Mandatory)][string[]]$Identity,   # SamAccountName(s)
+    [string]$Ticket = 'N/A',
+    [switch]$ArchiveHome,
+    [switch]$RevokeM365
+)
+
+# ---------------- SETTINGS: edit for your environment ----------------
+$Config = @{
+    Server      = 'AD-01.corp.williamslabs.ca'   # pin the DC
+    DisabledOU  = 'OU=Disabled,DC=corp,DC=williamslabs,DC=ca'
+    ArchiveRoot = '\\FS-01\Archive$'
+    LogDir      = 'C:\Logs\Lifecycle'
+}
+# ---------------------------------------------------------------------
+
+function Write-Log {
+    param(
+        [Parameter(Mandatory)][string]$Message,
+        [ValidateSet('INFO','WARN','ERROR')][string]$Level = 'INFO'
+    )
+    if (-not (Test-Path $Config.LogDir)) {
+        New-Item -ItemType Directory -Path $Config.LogDir -Force | Out-Null
+    }
+    $line = '{0:yyyy-MM-dd HH:mm:ss} [{1}] {2}' -f (Get-Date), $Level, $Message
+    Add-Content -Path (Join-Path $Config.LogDir "lifecycle-$(Get-Date -Format yyyyMM).log") -Value $line
+    switch ($Level) {
+        'WARN'  { Write-Warning $Message }
+        'ERROR' { Write-Host $line -ForegroundColor Red }
+        default { Write-Host $line }
+    }
+}
+
+function New-RandomPassword {
+    param([int]$Length = 16)
+    $chars = [char[]]'abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789!@#$%&amp;*'
+    $bytes = New-Object byte[] $Length
+    [System.Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($bytes)
+    -join ($bytes | ForEach-Object { $chars[$_ % $chars.Length] })
+}
+
+Import-Module ActiveDirectory -ErrorAction Stop
+$PSDefaultParameterValues['*-AD*:Server'] = $Config.Server
+
+if ($RevokeM365) {
+    Import-Module Microsoft.Graph.Users, Microsoft.Graph.Users.Actions -ErrorAction Stop
+    Connect-MgGraph -Scopes 'User.ReadWrite.All' -NoWelcome
+}
+
+foreach ($sam in $Identity) {
+    try {
+        $user = Get-ADUser -Identity $sam -Properties MemberOf, Manager, HomeDirectory, Description, DirectReports
+        $stamp = Get-Date -Format 'yyyy-MM-dd'
+        Write-Log "Offboarding started for $sam (ticket $Ticket)"
+
+        if ($user.DirectReports) {
+            Write-Log "$sam still has direct reports: reassign them to a new manager." 'WARN'
+        }
+
+        # 1. Record group membership so access can be restored or audited
+        $groups = Get-ADPrincipalGroupMembership -Identity $user | Where-Object Name -ne 'Domain Users'
+        $groupFile = Join-Path $Config.LogDir "offboard-$sam-$stamp-groups.txt"
+        if ($PSCmdlet.ShouldProcess($sam, 'Export group membership')) {
+            $groups.Name | Set-Content -Path $groupFile
+            Write-Log "Saved $($groups.Count) groups to $groupFile"
+        }
+
+        # 2. Disable, scramble password, stamp description
+        if ($PSCmdlet.ShouldProcess($sam, 'Disable account and reset password')) {
+            Disable-ADAccount -Identity $user
+            Set-ADAccountPassword -Identity $user -Reset `
+                -NewPassword (ConvertTo-SecureString (New-RandomPassword 32) -AsPlainText -Force)
+            Set-ADUser -Identity $user `
+                -Description "Disabled $stamp - ticket $Ticket - was: $($user.Description)"
+            Write-Log "Disabled $sam and reset password"
+        }
+
+        # 3. Remove from all groups except Domain Users
+        if ($PSCmdlet.ShouldProcess($sam, 'Remove group memberships')) {
+            foreach ($g in $groups) {
+                Remove-ADGroupMember -Identity $g -Members $user -Confirm:$false
+                Write-Log "Removed $sam from $($g.Name)"
+            }
+        }
+
+        # 4. Archive the home folder
+        if ($ArchiveHome -and $user.HomeDirectory -and (Test-Path $user.HomeDirectory)) {
+            $dest = Join-Path $Config.ArchiveRoot "${sam}_$stamp"
+            if ($PSCmdlet.ShouldProcess($user.HomeDirectory, "Move to $dest")) {
+                Move-Item -Path $user.HomeDirectory -Destination $dest
+                Write-Log "Archived home folder to $dest"
+            }
+        }
+
+        # 5. Revoke Microsoft 365 sessions and licences
+        if ($RevokeM365) {
+            $upn = $user.UserPrincipalName
+            if ($PSCmdlet.ShouldProcess($upn, 'Revoke sign-in sessions and licences')) {
+                Revoke-MgUserSignInSession -UserId $upn | Out-Null
+                $skus = (Get-MgUserLicenseDetail -UserId $upn).SkuId
+                if ($skus) {
+                    Set-MgUserLicense -UserId $upn -AddLicenses @() -RemoveLicenses $skus | Out-Null
+                }
+                Write-Log "Revoked sessions and removed $(@($skus).Count) licence(s) for $upn"
+            }
+        }
+
+        # 6. Move to the Disabled OU (last, so earlier steps can still find the object)
+        if ($PSCmdlet.ShouldProcess($sam, "Move to $($Config.DisabledOU)")) {
+            Move-ADObject -Identity $user.DistinguishedName -TargetPath $Config.DisabledOU
+            Write-Log "Moved $sam to Disabled OU"
+        }
+
+        Write-Log "Offboarding complete for $sam"
+    }
+    catch {
+        Write-Log "Offboarding failed for ${sam}: $_" 'ERROR'
+    }
+}</pre>
+<p><strong>Usage</strong></p>
+<pre>.\offboard.ps1 -Identity jdoe -Ticket INC-1042 -WhatIf
+.\offboard.ps1 -Identity jdoe -Ticket INC-1042 -ArchiveHome -RevokeM365
+.\offboard.ps1 -Identity jdoe,rroe -Ticket INC-1050 -Confirm:$false</pre>
+<p>The script does not delete anything. After your retention period (commonly 30 to 90 days), remove the account by hand: <code>Remove-ADUser -Identity jdoe</code>. Mailbox conversion to shared, forwarding and manager access to OneDrive are Exchange and Entra steps, so they sit on the checklist below instead of in the script.</p>
+
+<h2>Reactivation script</h2>
+<p><code>reactivate.ps1</code> reverses an offboarding when an employee returns. It refuses to touch an account that is already enabled. It resets the password to a new random one (change forced at first logon), enables the account, restores the original description, moves the user back to the Users OU, and re-adds the groups saved by <code>offboard.ps1</code>. If no group backup exists it falls back to the baseline and department groups. It can also move the archived home folder back and re-assign the Microsoft 365 licence.</p>
+<pre>&lt;#
+.SYNOPSIS
+Reactivates a previously offboarded Active Directory user (self-contained).
+
+.DESCRIPTION
+For a returning employee: resets the password to a random value (change forced at
+first logon), enables the account, restores the original description, moves the
+user back to the Users OU, and restores group membership from the backup file that
+offboard.ps1 saved (offboard-&lt;sam&gt;-&lt;date&gt;-groups.txt). If no backup is found it
+adds the baseline groups plus the groups for the user's Department. Optionally
+restores the archived home folder and re-assigns the Microsoft 365 licence.
+The temporary password is shown once at the end and is never logged.
+Edit the $Config block below before the first run.
+
+.PARAMETER Identity
+One or more SamAccountNames of disabled accounts, for example jdoe.
+
+.PARAMETER Ticket
+Ticket or reference number recorded in the description and log. Default: N/A.
+
+.PARAMETER Manager
+SamAccountName of the new manager. Optional; the old manager may have left.
+
+.PARAMETER RestoreHome
+Move the newest &lt;sam&gt;_&lt;date&gt; folder from ArchiveRoot back to the home folder path.
+
+.PARAMETER AssignLicense
+Re-assign the Microsoft 365 licence named in $Config.LicenseSku using Microsoft.Graph.
+The account must already have synced to Entra ID.
+
+.EXAMPLE
+.\reactivate.ps1 -Identity jdoe -Ticket INC-2001 -WhatIf
+Dry run: shows every step without changing anything.
+
+.EXAMPLE
+.\reactivate.ps1 -Identity jdoe -Ticket INC-2001 -Manager bjones -RestoreHome
+Reactivates the account, sets a new manager and restores the archived home folder.
+
+.EXAMPLE
+.\reactivate.ps1 -Identity jdoe -Ticket INC-2001 -RestoreHome -AssignLicense
+Full reactivation including the Microsoft 365 licence.
+
+.NOTES
+Supports the common -WhatIf and -Confirm parameters.
+Log: C:\Logs\Lifecycle\lifecycle-yyyyMM.log
+#&gt;
+#Requires -Modules ActiveDirectory
+[CmdletBinding(SupportsShouldProcess)]
+param(
+    [Parameter(Mandatory)][string[]]$Identity,   # SamAccountName(s)
+    [string]$Ticket = 'N/A',
+    [string]$Manager,
+    [switch]$RestoreHome,
+    [switch]$AssignLicense
+)
+
+# ---------------- SETTINGS: edit for your environment ----------------
+$Config = @{
+    Server         = 'AD-01.corp.williamslabs.ca'   # pin the DC
+    NetbiosName    = 'CORP'
+    UsersOU        = 'OU=Corp Users,DC=corp,DC=williamslabs,DC=ca'
+    HomeRoot       = '\\FS-01\Home$'
+    ArchiveRoot    = '\\FS-01\Archive$'
+    LogDir         = 'C:\Logs\Lifecycle'
+    BaselineGroups = @('All-Staff', 'VPN-Users')
+    DeptGroups     = @{            # Department -&gt; extra security groups
+        'IT'      = @('IT-Staff', 'Helpdesk')
+        'Finance' = @('Finance-Staff')
+        'Sales'   = @('Sales-Staff')
+    }
+    LicenseSku     = 'ENTERPRISEPACK'   # Microsoft 365 SKU part number
+}
+# ---------------------------------------------------------------------
+
+function Write-Log {
+    param(
+        [Parameter(Mandatory)][string]$Message,
+        [ValidateSet('INFO','WARN','ERROR')][string]$Level = 'INFO'
+    )
+    if (-not (Test-Path $Config.LogDir)) {
+        New-Item -ItemType Directory -Path $Config.LogDir -Force | Out-Null
+    }
+    $line = '{0:yyyy-MM-dd HH:mm:ss} [{1}] {2}' -f (Get-Date), $Level, $Message
+    Add-Content -Path (Join-Path $Config.LogDir "lifecycle-$(Get-Date -Format yyyyMM).log") -Value $line
+    switch ($Level) {
+        'WARN'  { Write-Warning $Message }
+        'ERROR' { Write-Host $line -ForegroundColor Red }
+        default { Write-Host $line }
+    }
+}
+
+function New-RandomPassword {
+    param([int]$Length = 16)
+    $chars = [char[]]'abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789!@#$%&amp;*'
+    $bytes = New-Object byte[] $Length
+    [System.Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($bytes)
+    -join ($bytes | ForEach-Object { $chars[$_ % $chars.Length] })
+}
+
+Import-Module ActiveDirectory -ErrorAction Stop
+$PSDefaultParameterValues['*-AD*:Server'] = $Config.Server
+
+if ($AssignLicense) {
+    Import-Module Microsoft.Graph.Users.Actions -ErrorAction Stop
+    Connect-MgGraph -Scopes 'User.ReadWrite.All','Organization.Read.All' -NoWelcome
+    $sku = Get-MgSubscribedSku | Where-Object SkuPartNumber -eq $Config.LicenseSku
+    if (-not $sku) { throw "Licence SKU '$($Config.LicenseSku)' not found." }
+}
+
+$results = foreach ($sam in $Identity) {
+    try {
+        $user  = Get-ADUser -Identity $sam -Properties Description, Department, HomeDirectory
+        $stamp = Get-Date -Format 'yyyy-MM-dd'
+
+        if ($user.Enabled) {
+            Write-Log "$sam is already enabled, skipping." 'WARN'
+            continue
+        }
+        Write-Log "Reactivation started for $sam (ticket $Ticket)"
+
+        # 1. New password, enable, restore the original description
+        $pw   = New-RandomPassword
+        $orig = $user.Description
+        if ($orig -match '^Disabled .+? - ticket .+? - was: (.*)$') { $orig = $Matches[1] }
+        $desc = "$orig (reactivated $stamp, ticket $Ticket)".Trim()
+        if ($PSCmdlet.ShouldProcess($sam, 'Reset password and enable account')) {
+            Set-ADAccountPassword -Identity $user -Reset -NewPassword (ConvertTo-SecureString $pw -AsPlainText -Force)
+            Set-ADUser -Identity $user -ChangePasswordAtLogon $true -Description $desc
+            Enable-ADAccount -Identity $user
+            Write-Log "Enabled $sam with a new temporary password"
+        }
+
+        # 2. Move back to the Users OU (the DN changes, so use $sam from here on)
+        if ($PSCmdlet.ShouldProcess($sam, "Move to $($Config.UsersOU)")) {
+            Move-ADObject -Identity $user.DistinguishedName -TargetPath $Config.UsersOU
+            Write-Log "Moved $sam to $($Config.UsersOU)"
+        }
+
+        # 3. Optional new manager
+        if ($Manager) {
+            $mgr = Get-ADUser -Filter "SamAccountName -eq '$Manager'"
+            if ($mgr) {
+                if ($PSCmdlet.ShouldProcess($sam, "Set manager $Manager")) {
+                    Set-ADUser -Identity $sam -Manager $mgr.DistinguishedName
+                    Write-Log "Set manager of $sam to $Manager"
+                }
+            }
+            else { Write-Log "Manager '$Manager' not found, continuing without a manager" 'INFO' }
+        }
+
+        # 4. Restore groups from the offboarding backup, else baseline + department
+        $backup = Get-ChildItem -Path $Config.LogDir -Filter "offboard-$sam-*-groups.txt" -ErrorAction SilentlyContinue |
+            Sort-Object LastWriteTime -Descending | Select-Object -First 1
+        if ($backup) {
+            $names = Get-Content $backup.FullName | Where-Object { $_ }
+            Write-Log "Restoring groups from $($backup.Name)"
+        }
+        else {
+            $names = @($Config.BaselineGroups) + @($Config.DeptGroups[$user.Department])
+            Write-Log "No group backup found for $sam, using baseline and department groups" 'WARN'
+        }
+        if ($PSCmdlet.ShouldProcess($sam, 'Restore group memberships')) {
+            foreach ($n in $names | Where-Object { $_ }) {
+                try {
+                    $grp = Get-ADGroup -Filter "Name -eq '$n'"
+                    Add-ADGroupMember -Identity $grp -Members $sam
+                    Write-Log "Added $sam to $n"
+                } catch { Write-Log "Group '$n' failed for ${sam}: $_" 'WARN' }
+            }
+        }
+
+        # 5. Optional: move the archived home folder back
+        if ($RestoreHome) {
+            $homePath = if ($user.HomeDirectory) { $user.HomeDirectory } else { Join-Path $Config.HomeRoot $sam }
+            $archive  = Get-ChildItem -Path $Config.ArchiveRoot -Directory -Filter "${sam}_*" -ErrorAction SilentlyContinue |
+                Sort-Object Name -Descending | Select-Object -First 1
+            if (Test-Path $homePath) {
+                Write-Log "Home folder $homePath already exists, not restoring." 'WARN'
+            }
+            elseif ($archive) {
+                if ($PSCmdlet.ShouldProcess($archive.FullName, "Move to $homePath")) {
+                    Move-Item -Path $archive.FullName -Destination $homePath
+                    # The move drops the user's own permission (the archive share is admin-only), so grant it again
+                    $acl  = Get-Acl $homePath
+                    $rule = New-Object System.Security.AccessControl.FileSystemAccessRule(
+                        "$($Config.NetbiosName)\$sam", 'Modify',
+                        'ContainerInherit,ObjectInherit', 'None', 'Allow')
+                    $acl.AddAccessRule($rule)
+                    Set-Acl -Path $homePath -AclObject $acl
+                    Set-ADUser -Identity $sam -HomeDirectory $homePath -HomeDrive 'H:'
+                    Write-Log "Restored home folder from $($archive.Name) to $homePath"
+                }
+            }
+            else { Write-Log "No archive found for $sam in $($Config.ArchiveRoot)" 'WARN' }
+        }
+
+        # 6. Optional Microsoft 365 licence (account must have synced to Entra ID)
+        if ($AssignLicense) {
+            $upn = (Get-ADUser -Identity $sam).UserPrincipalName
+            if ($PSCmdlet.ShouldProcess($upn, "Assign $($Config.LicenseSku)")) {
+                Set-MgUserLicense -UserId $upn -AddLicenses @{ SkuId = $sku.SkuId } -RemoveLicenses @() | Out-Null
+                Write-Log "Assigned $($Config.LicenseSku) to $upn"
+            }
+        }
+
+        Write-Log "Reactivation complete for $sam"
+        if (-not $WhatIfPreference) { [pscustomobject]@{ User = $sam; TempPassword = $pw } }
+    }
+    catch {
+        Write-Log "Reactivation failed for ${sam}: $_" 'ERROR'
+    }
+}
+
+$results | Format-Table -AutoSize
+Write-Host 'Hand each temporary password over securely, then clear this window.' -ForegroundColor Yellow</pre>
+<p><strong>Usage</strong></p>
+<pre>.\reactivate.ps1 -Identity jdoe -Ticket INC-2001 -WhatIf
+.\reactivate.ps1 -Identity jdoe -Ticket INC-2001 -Manager bjones -RestoreHome
+.\reactivate.ps1 -Identity jdoe -Ticket INC-2001 -RestoreHome -AssignLicense</pre>
+<p>Run it from the same machine that ran <code>offboard.ps1</code>, or copy the <code>offboard-&lt;sam&gt;-&lt;date&gt;-groups.txt</code> file over, since that file is how the original access is restored. Review the restored groups before handing the account back: a returning employee may be in a different role.</p>
+<p><strong>Verification commands</strong></p>
+<pre># Confirm an onboarded user
+Get-ADUser jdoe -Properties Enabled, MemberOf, HomeDirectory, Manager |
+    Select-Object Name, Enabled, HomeDirectory, Manager, @{n='Groups';e={$_.MemberOf.Count}}
+
+# Confirm an offboarded user
+Get-ADUser jdoe -Properties Enabled, MemberOf, Description |
+    Select-Object Name, Enabled, DistinguishedName, Description, @{n='Groups';e={$_.MemberOf.Count}}
+
+# All disabled accounts older than 90 days (deletion candidates)
+Search-ADAccount -AccountDisabled -UsersOnly -SearchBase 'OU=Disabled,DC=corp,DC=williamslabs,DC=ca' |
+    Get-ADUser -Properties WhenChanged | Where-Object WhenChanged -lt (Get-Date).AddDays(-90)
+
+# Review this month's log
+Get-Content "C:\Logs\Lifecycle\lifecycle-$(Get-Date -Format yyyyMM).log" -Tail 50</pre>
+
+<h2>Test results and lessons learned</h2>
+<p>All three scripts were tested end to end in the lab (domain <code>corp.williamslabs.ca</code>, DC <code>AD-01</code>, file server <code>FS-01</code>) using a throwaway user, <code>jdoe</code>. Each run was dry-run with <code>-WhatIf</code> first, then run for real. Times are from the server log (server clock).</p>
+<table class="data-table">
+<thead><tr><th>Stage</th><th>Command</th><th>Result</th></tr></thead>
+<tbody>
+<tr><td>Onboard (17:35)</td><td><code>.\New-Onboard.ps1 -CsvPath E:\Onboarding\NewHires.csv</code></td><td>User created, 3 groups added, home folder <code>\\FS-01\Home$\jdoe</code> created. Missing manager <code>bjones</code> was logged and skipped.</td></tr>
+<tr><td>Offboard (18:47)</td><td><code>.\offboard.ps1 -Identity jdoe -Ticket TEST-001 -ArchiveHome</code></td><td>Groups saved to file, account disabled, 3 groups removed, home folder archived to <code>\\FS-01\Archive$\jdoe_2026-11-20</code>, user moved to the Disabled OU.</td></tr>
+<tr><td>Reactivate (19:27)</td><td><code>.\reactivate.ps1 -Identity jdoe -Ticket INC-2001 -RestoreHome</code></td><td>Account enabled with a new temporary password, moved back to Corp Users, 3 groups restored from the backup file, home folder restored, description restored with a reactivation note.</td></tr>
+</tbody>
+</table>
+<p><strong>Problems found and fixed during testing</strong></p>
+<ul>
+<li><strong>Home folder permissions lost on reactivation.</strong> After the restore, <code>icacls</code> showed only Domain Admins and SYSTEM; the user's own <code>CORP\jdoe</code> Modify permission was gone. Moving a folder between the <code>Home$</code> and <code>Archive$</code> shares is done as a copy and delete, so the folder takes the permissions of the folder it lands in, and the archive share is admin-only. Fix: <code>reactivate.ps1</code> now re-grants the user Modify rights after <code>-RestoreHome</code>. For an account already affected, repair it by hand with <code>icacls '\\FS-01\Home$\jdoe' /grant 'CORP\jdoe:(OI)(CI)M'</code>.</li>
+<li><strong>Fake password shown during <code>-WhatIf</code>.</strong> The temporary password table appeared in dry runs even though no password was set. <code>reactivate.ps1</code> now prints it only on real runs.</li>
+<li><strong>Wrong paths and hostnames.</strong> Early runs failed on a non-existent OU path, a mistyped file server name and a domain controller timeout. The scripts now pin the DC with <code>-Server</code> and use the real OU and server names.</li>
+<li><strong>Missing manager.</strong> A manager not found in AD no longer matters; the script logs it as informational and continues.</li>
+</ul>
+<p><strong>Lessons</strong></p>
+<ul>
+<li>Always dry-run with <code>-WhatIf</code> first, then verify the real result with <code>Get-ADUser</code> and <code>icacls</code>. The log said everything succeeded, but only the permission check showed the missing access.</li>
+<li>Archiving and restoring home folders resets their permissions, so restore steps must re-apply the user's access.</li>
+<li>Keep the group backup file from offboarding: it is what makes reactivation restore the original access.</li>
+</ul>
+
+    </div>
+
+    <div class="project-nav">
+      <a href="gpo-software-deployment.html">&larr; GPO Software Deployment</a>
+      <a href="homelab-monitoring.html">Monitoring VM &rarr;</a>
+    </div>
+  </div>
+</section>
+
+<footer class="site-footer">
+  Williams Labs &middot; Infrastructure Lab
+</footer>
+
+</body>
+</html>
