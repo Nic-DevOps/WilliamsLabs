@@ -9,6 +9,13 @@
 <script src="../js/theme.js"></script>
 <style>
   .prose img { display: block; max-width: 100%; height: auto; margin: 0 0 1.5rem; border-radius: 6px; border: 1px solid var(--border); }
+  .script-toggle { margin: 0 0 1.5rem; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-alt); }
+  .script-toggle > summary { cursor: pointer; padding: 0.75rem 1rem; font-family: var(--mono); font-size: 0.95rem; font-weight: 600; list-style: none; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+  .script-toggle > summary::-webkit-details-marker { display: none; }
+  .script-toggle > summary::before { content: "\25B8"; color: var(--text-dim); transition: transform 0.15s; }
+  .script-toggle[open] > summary::before { transform: rotate(90deg); }
+  .script-toggle > summary:hover { color: var(--accent, inherit); }
+  .script-toggle > pre { margin: 0; border: none; border-top: 1px solid var(--border); border-radius: 0 0 var(--radius) var(--radius); }
   .prose .data-table { display: block; overflow-x: auto; }
 </style>
 </head>
@@ -76,6 +83,8 @@
 Jane,Doe,Finance,Accountant,bjones,2026-12-01</pre>
 <h2>Onboarding script</h2>
 <p><code>New-Onboard.ps1</code> creates each user from the CSV, adds baseline and department groups, builds a permissioned home folder, and optionally assigns a Microsoft 365 licence. It prints temporary passwords once at the end and never writes them to the log.</p>
+<details class="script-toggle">
+<summary>New-Onboard.ps1</summary>
 <pre>&lt;#
 .SYNOPSIS
 Creates Active Directory users from a CSV file (self-contained onboarding).
@@ -295,6 +304,7 @@ $results = foreach ($row in Import-Csv -Path $CsvPath) {
 
 $results | Format-Table -AutoSize
 Write-Host &#39;Hand each temporary password over securely, then clear this window.&#39; -ForegroundColor Yellow</pre>
+</details>
 <p><strong>Usage</strong></p>
 <pre>.\New-Onboard.ps1 -CsvPath E:\Onboarding\NewHires.csv -WhatIf     # dry run
 .\New-Onboard.ps1 -CsvPath E:\Onboarding\NewHires.csv              # create accounts
@@ -366,6 +376,8 @@ Get-Content &quot;C:\Logs\Lifecycle\lifecycle-$(Get-Date -Format yyyyMM).log&quo
 <p>Record the time for one user and for ten. If ten takes roughly ten times as long as one, the script is linear and safe to run on larger batches.</p>
 <h2>Offboarding script</h2>
 <p><code>O</code><code>f</code><code>fboard.ps1</code> locks a leaver out immediately and keeps everything needed to restore or audit the account. It saves the group list first, disables the account, scrambles the password, strips group membership, moves the object to the Disabled OU, and can archive the home folder and revoke Microsoft 365 access.</p>
+<details class="script-toggle">
+<summary>offboard.ps1</summary>
 <pre>&lt;#
 .SYNOPSIS
 Offboards one or more users in Active Directory (self-contained).
@@ -558,6 +570,7 @@ foreach ($sam in $Identity) {
         Write-Log &quot;Offboarding failed for ${sam}: $_&quot; &#39;ERROR&#39;
     }
 }</pre>
+</details>
 <p><strong>Usage</strong></p>
 <pre>.\offboard.ps1 -Identity jdoe -Ticket INC-1042 -WhatIf
 .\offboard.ps1 -Identity jdoe -Ticket INC-1042 -ArchiveHome -RevokeM365
@@ -591,6 +604,8 @@ Get-ChildItem C:\Logs\Lifecycle -Filter &#39;offboard-*-groups.txt&#39; | Where-
 <img src="../images/powershell-lifecycle/bulk-offboard-check.png" alt="The Archive$ share listing ten archived home folders dated 2026-11-23, and Test-Path showing none of the ten home folders remain on Home$" loading="lazy">
 <h2>Reactivation script</h2>
 <p><code>reactivate.ps1</code> reverses an offboarding when an employee returns. It refuses to touch an account that is already enabled. It resets the password to a new random one (change forced at first logon), enables the account, restores the original description, moves the user back to the Users OU, and re-adds the groups saved by <code>offboard.ps1</code>. If no group backup exists it falls back to the baseline and department groups. It can also move the archived home folder back and re-assign the Microsoft 365 licence.</p>
+<details class="script-toggle">
+<summary>reactivate.ps1</summary>
 <pre>&lt;#
 .SYNOPSIS
 Reactivates a previously offboarded Active Directory user (self-contained).
@@ -835,6 +850,7 @@ $results = foreach ($sam in $Identity) {
 
 $results | Format-Table -AutoSize
 Write-Host &#39;Hand each temporary password over securely, then clear this window.&#39; -ForegroundColor Yellow</pre>
+</details>
 <p><strong>Usage</strong></p>
 <pre>.\reactivate.ps1 -Identity eevans -Ticket INC-2001 -WhatIf
 .\reactivate.ps1 -Identity eevans -Ticket INC-2001 -Manager nnash -RestoreHome
