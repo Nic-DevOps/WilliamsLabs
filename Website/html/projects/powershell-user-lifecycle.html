@@ -375,7 +375,7 @@ icacls &#39;\\FS-01\Home$\aadams&#39;
 Get-Content &quot;C:\Logs\Lifecycle\lifecycle-$(Get-Date -Format yyyyMM).log&quot; | Select-String &#39;Created &#39;</pre>
 <p>Record the time for one user and for ten. If ten takes roughly ten times as long as one, the script is linear and safe to run on larger batches.</p>
 <h2>Offboarding script</h2>
-<p><code>O</code><code>f</code><code>fboard.ps1</code> locks a leaver out immediately and keeps everything needed to restore or audit the account. It saves the group list first, disables the account, scrambles the password, strips group membership, moves the object to the Disabled OU, and can archive the home folder and revoke Microsoft 365 access.</p>
+<p><code>offboard.ps1</code> locks a leaver out immediately and keeps everything needed to restore or audit the account. It saves the group list first, disables the account, scrambles the password, strips group membership, moves the object to the Disabled OU, and can archive the home folder and revoke Microsoft 365 access.</p>
 <details class="script-toggle">
 <summary>offboard.ps1</summary>
 <pre>&lt;#
