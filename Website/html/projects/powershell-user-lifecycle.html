@@ -8,6 +8,7 @@
 <link rel="stylesheet" href="../css/style.css?v=20261016">
 <script src="../js/theme.js"></script>
 <style>
+  .prose img { display: block; max-width: 100%; height: auto; margin: 0 0 1.5rem; border-radius: 6px; border: 1px solid var(--border); }
   .prose .data-table { display: block; overflow-x: auto; }
 </style>
 </head>
@@ -67,14 +68,12 @@
 <li>Never hard-code passwords. The onboarding script generates a random temporary password and forces a change at first logon.</li>
 <li>Offboarding is reversible by design: accounts are disabled and moved, not deleted. Delete only after your retention period.</li>
 </ul>
-
 <h2>Settings and CSV format</h2>
 <p>Neither script needs another file. Edit the <code>$Config</code> settings block at the top of each one (domain, OUs, file shares, groups) before the first run; the onboarding script also needs a CSV.</p>
 <p>Both scripts include built-in help. Run <code>Get-Help .\New-Onboard.ps1 -Full</code> or <code>Get-Help .\offboard.ps1 -Examples</code> to see the parameters and examples without opening the file.</p>
 <p>Onboarding reads one row per new hire from E:\Onboarding\<code>NewHires.csv</code>:</p>
 <pre>FirstName,LastName,Department,Title,Manager,StartDate
 Jane,Doe,Finance,Accountant,bjones,2026-12-01</pre>
-
 <h2>Onboarding script</h2>
 <p><code>New-Onboard.ps1</code> creates each user from the CSV, adds baseline and department groups, builds a permissioned home folder, and optionally assigns a Microsoft 365 licence. It prints temporary passwords once at the end and never writes them to the log.</p>
 <pre>&lt;#
@@ -84,7 +83,7 @@ Creates Active Directory users from a CSV file (self-contained onboarding).
 .DESCRIPTION
 For each CSV row this script creates the AD account with a unique username and a
 random temporary password (change forced at first logon), sets the manager if it
-exists, adds baseline and department groups, creates the user's private home folder
+exists, adds baseline and department groups, creates the user&#39;s private home folder
 with Modify rights for that user only, and optionally assigns a Microsoft 365 licence.
 Every action is written to the lifecycle log. Temporary passwords are shown once at
 the end and are never logged. Edit the $Config block below before the first run.
@@ -122,77 +121,112 @@ param(
 
 # ---------------- SETTINGS: edit for your environment ----------------
 $Config = @{
-    Domain         = 'corp.williamslabs.ca'
-    NetbiosName    = 'CORP'
-    Server         = 'AD-01.corp.williamslabs.ca'   # pin the DC
-    UpnSuffix      = 'williamslabs.ca'
-    UsersOU        = 'OU=Corp Users,DC=corp,DC=williamslabs,DC=ca'
-    HomeRoot       = '\\FS-01\Home$'
-    LogDir         = 'C:\Logs\Lifecycle'
-    BaselineGroups = @('All-Staff', 'VPN-Users')
+    Domain         = &#39;corp.williamslabs.ca&#39;
+    NetbiosName    = &#39;CORP&#39;
+    Server         = &#39;AD-01.corp.williamslabs.ca&#39;   # pin the DC
+    UpnSuffix      = &#39;williamslabs.ca&#39;
+    UsersOU        = &#39;OU=Corp Users,DC=corp,DC=williamslabs,DC=ca&#39;
+    HomeRoot       = &#39;\\FS-01\Home$&#39;
+    LogDir         = &#39;C:\Logs\Lifecycle&#39;
+    BaselineGroups = @(&#39;All-Staff&#39;, &#39;VPN-Users&#39;)
     DeptGroups     = @{            # Department -&gt; extra security groups
-        'IT'      = @('IT-Staff', 'Helpdesk')
-        'Finance' = @('Finance-Staff')
-        'Sales'   = @('Sales-Staff')
+        &#39;IT&#39;      = @(&#39;IT-Staff&#39;, &#39;Helpdesk&#39;)
+        &#39;Finance&#39; = @(&#39;Finance-Staff&#39;)
+        &#39;Sales&#39;   = @(&#39;Sales-Staff&#39;)
     }
-    LicenseSku     = 'ENTERPRISEPACK'   # Microsoft 365 SKU part number
+    LicenseSku     = &#39;ENTERPRISEPACK&#39;   # Microsoft 365 SKU part number
 }
 # ---------------------------------------------------------------------
 
 function Write-Log {
     param(
         [Parameter(Mandatory)][string]$Message,
-        [ValidateSet('INFO','WARN','ERROR')][string]$Level = 'INFO'
+        [ValidateSet(&#39;INFO&#39;,&#39;WARN&#39;,&#39;ERROR&#39;)][string]$Level = &#39;INFO&#39;
     )
     if (-not (Test-Path $Config.LogDir)) {
         New-Item -ItemType Directory -Path $Config.LogDir -Force | Out-Null
     }
-    $line = '{0:yyyy-MM-dd HH:mm:ss} [{1}] {2}' -f (Get-Date), $Level, $Message
-    Add-Content -Path (Join-Path $Config.LogDir "lifecycle-$(Get-Date -Format yyyyMM).log") -Value $line
+    $line = &#39;{0:yyyy-MM-dd HH:mm:ss} [{1}] {2}&#39; -f (Get-Date), $Level, $Message
+    Add-Content -Path (Join-Path $Config.LogDir &quot;lifecycle-$(Get-Date -Format yyyyMM).log&quot;) -Value $line
     switch ($Level) {
-        'WARN'  { Write-Warning $Message }
-        'ERROR' { Write-Host $line -ForegroundColor Red }
+        &#39;WARN&#39;  { Write-Warning $Message }
+        &#39;ERROR&#39; { Write-Host $line -ForegroundColor Red }
         default { Write-Host $line }
     }
 }
 
 function New-RandomPassword {
-    param([int]$Length = 16)
-    $chars = [char[]]'abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789!@#$%&amp;*'
-    $bytes = New-Object byte[] $Length
-    [System.Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($bytes)
-    -join ($bytes | ForEach-Object { $chars[$_ % $chars.Length] })
+    param([ValidateRange(12, 128)][int]$Length = 16)
+
+    # Look-alike characters (l, I, O, 0, 1) are left out so passwords are easy to read out
+    $sets = @(
+        &#39;abcdefghijkmnpqrstuvwxyz&#39;
+        &#39;ABCDEFGHJKLMNPQRSTUVWXYZ&#39;
+        &#39;23456789&#39;
+        &#39;!@#$%&amp;*&#39;
+    )
+    $all = $sets -join &#39;&#39;
+    $rng = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+
+    # Unbiased random number from 0 to ($Max - 1), works in Windows PowerShell 5.1 and 7
+    function Get-RandomIndex([int]$Max) {
+        $bytes = New-Object byte[] 4
+        $limit = [uint32]::MaxValue - ([uint32]::MaxValue % $Max)
+        do { $rng.GetBytes($bytes); $n = [BitConverter]::ToUInt32($bytes, 0) } while ($n -ge $limit)
+        [int]($n % $Max)
+    }
+
+    try {
+        # One character from every set guarantees the domain&#39;s complexity rules
+        $chars = [System.Collections.Generic.List[char]]::new()
+        foreach ($set in $sets) { $chars.Add($set[(Get-RandomIndex $set.Length)]) }
+        while ($chars.Count -lt $Length) { $chars.Add($all[(Get-RandomIndex $all.Length)]) }
+
+        # Fisher-Yates shuffle so the guaranteed characters are not always first
+        for ($i = $chars.Count - 1; $i -gt 0; $i--) {
+            $j = Get-RandomIndex ($i + 1)
+            $chars[$i], $chars[$j] = $chars[$j], $chars[$i]
+        }
+        -join $chars
+    }
+    finally { $rng.Dispose() }
 }
 
 function Get-UniqueSam {
     param([string]$First, [string]$Last)
-    $base = ($First.Substring(0,1) + $Last).ToLower() -replace '[^a-z0-9]', ''
+    $base = ($First.Substring(0,1) + $Last).ToLower() -replace &#39;[^a-z0-9]&#39;, &#39;&#39;
     $sam = $base; $i = 1
-    while (Get-ADUser -Filter "SamAccountName -eq '$sam'" -ErrorAction SilentlyContinue) {
-        $i++; $sam = "$base$i"
+    while (Get-ADUser -Filter &quot;SamAccountName -eq &#39;$sam&#39;&quot; -ErrorAction SilentlyContinue) {
+        $i++; $sam = &quot;$base$i&quot;
     }
     $sam
 }
 
 Import-Module ActiveDirectory -ErrorAction Stop
-$PSDefaultParameterValues['*-AD*:Server'] = $Config.Server
+$PSDefaultParameterValues[&#39;*-AD*:Server&#39;] = $Config.Server
 
 if ($AssignLicense) {
     Import-Module Microsoft.Graph.Users.Actions -ErrorAction Stop
-    Connect-MgGraph -Scopes 'User.ReadWrite.All','Organization.Read.All' -NoWelcome
+    Connect-MgGraph -Scopes &#39;User.ReadWrite.All&#39;,&#39;Organization.Read.All&#39; -NoWelcome
     $sku = Get-MgSubscribedSku | Where-Object SkuPartNumber -eq $Config.LicenseSku
-    if (-not $sku) { throw "Licence SKU '$($Config.LicenseSku)' not found." }
+    if (-not $sku) { throw &quot;Licence SKU &#39;$($Config.LicenseSku)&#39; not found.&quot; }
 }
 
 $results = foreach ($row in Import-Csv -Path $CsvPath) {
     try {
         $sam  = Get-UniqueSam -First $row.FirstName -Last $row.LastName
-        $upn  = "$sam@$($Config.UpnSuffix)"
-        $name = "$($row.FirstName) $($row.LastName)"
+        $upn  = &quot;$sam@$($Config.UpnSuffix)&quot;
+        $name = &quot;$($row.FirstName) $($row.LastName)&quot;
+        # Two people can share a name: make the AD object name unique, keep the display name
+        $cn   = $name
+        $safe = $name.Replace(&quot;&#39;&quot;, &quot;&#39;&#39;&quot;)
+        if (Get-ADUser -Filter &quot;Name -eq &#39;$safe&#39;&quot; -SearchBase $Config.UsersOU -SearchScope OneLevel -ErrorAction SilentlyContinue) {
+            $cn = &quot;$name ($sam)&quot;
+        }
         $pw   = New-RandomPassword
 
         $params = @{
-            Name                  = $name
+            Name                  = $cn
             GivenName             = $row.FirstName
             Surname               = $row.LastName
             DisplayName           = $name
@@ -201,29 +235,35 @@ $results = foreach ($row in Import-Csv -Path $CsvPath) {
             EmailAddress          = $upn
             Department            = $row.Department
             Title                 = $row.Title
-            Description           = "$($row.Title) - start $($row.StartDate)"
+            Description           = &quot;$($row.Title) - start $($row.StartDate)&quot;
             Path                  = $Config.UsersOU
             AccountPassword       = (ConvertTo-SecureString $pw -AsPlainText -Force)
             ChangePasswordAtLogon = $true
             Enabled               = $true
         }
         if ($row.Manager) {
-            $mgr = Get-ADUser -Filter "SamAccountName -eq '$($row.Manager)'"
+            $mgr = Get-ADUser -Filter &quot;SamAccountName -eq &#39;$($row.Manager)&#39;&quot;
             if ($mgr) { $params.Manager = $mgr.DistinguishedName }
-            else { Write-Log "Manager '$($row.Manager)' not found for $sam, continuing without a manager" 'INFO' }
+            else { Write-Log &quot;Manager &#39;$($row.Manager)&#39; not found for $sam, continuing without a manager&quot; &#39;INFO&#39; }
         }
 
-        if ($PSCmdlet.ShouldProcess($sam, 'Create AD user')) {
-            New-ADUser @params
-            Write-Log "Created $sam ($name), dept $($row.Department)"
+        if ($PSCmdlet.ShouldProcess($sam, &#39;Create AD user&#39;)) {
+            try { New-ADUser @params }
+            catch {
+                # A rejected password can leave a disabled half-made account behind: remove it so a retry works
+                Get-ADUser -Filter &quot;SamAccountName -eq &#39;$sam&#39;&quot; -ErrorAction SilentlyContinue |
+                    Remove-ADUser -Confirm:$false
+                throw
+            }
+            Write-Log &quot;Created $sam ($name), dept $($row.Department)&quot;
 
             # Groups
             $groups = @($Config.BaselineGroups) + @($Config.DeptGroups[$row.Department])
             foreach ($g in $groups | Where-Object { $_ }) {
                 try {
                     Add-ADGroupMember -Identity $g -Members $sam
-                    Write-Log "Added $sam to $g"
-                } catch { Write-Log "Group '$g' failed for ${sam}: $_" 'WARN' }
+                    Write-Log &quot;Added $sam to $g&quot;
+                } catch { Write-Log &quot;Group &#39;$g&#39; failed for ${sam}: $_&quot; &#39;WARN&#39; }
             }
 
             # Home folder with Modify rights for the user only
@@ -231,38 +271,101 @@ $results = foreach ($row in Import-Csv -Path $CsvPath) {
             New-Item -ItemType Directory -Path $homePath -Force | Out-Null
             $acl  = Get-Acl $homePath
             $rule = New-Object System.Security.AccessControl.FileSystemAccessRule(
-                "$($Config.NetbiosName)\$sam", 'Modify',
-                'ContainerInherit,ObjectInherit', 'None', 'Allow')
+                &quot;$($Config.NetbiosName)\$sam&quot;, &#39;Modify&#39;,
+                &#39;ContainerInherit,ObjectInherit&#39;, &#39;None&#39;, &#39;Allow&#39;)
             $acl.AddAccessRule($rule)
             Set-Acl -Path $homePath -AclObject $acl
-            Set-ADUser -Identity $sam -HomeDirectory $homePath -HomeDrive 'H:'
-            Write-Log "Home folder created at $homePath"
+            Set-ADUser -Identity $sam -HomeDirectory $homePath -HomeDrive &#39;H:&#39;
+            Write-Log &quot;Home folder created at $homePath&quot;
 
             # Optional Microsoft 365 licence (account must have synced to Entra ID first)
             if ($AssignLicense) {
                 Set-MgUserLicense -UserId $upn `
                     -AddLicenses @{ SkuId = $sku.SkuId } -RemoveLicenses @() | Out-Null
-                Write-Log "Assigned $($Config.LicenseSku) to $upn"
+                Write-Log &quot;Assigned $($Config.LicenseSku) to $upn&quot;
             }
         }
 
         [pscustomobject]@{ User = $sam; UPN = $upn; TempPassword = $pw }
     }
     catch {
-        Write-Log "Onboarding failed for $($row.FirstName) $($row.LastName): $_" 'ERROR'
+        Write-Log &quot;Onboarding failed for $($row.FirstName) $($row.LastName): $_&quot; &#39;ERROR&#39;
     }
 }
 
 $results | Format-Table -AutoSize
-Write-Host 'Hand each temporary password over securely, then clear this window.' -ForegroundColor Yellow</pre>
+Write-Host &#39;Hand each temporary password over securely, then clear this window.&#39; -ForegroundColor Yellow</pre>
 <p><strong>Usage</strong></p>
 <pre>.\New-Onboard.ps1 -CsvPath E:\Onboarding\NewHires.csv -WhatIf     # dry run
 .\New-Onboard.ps1 -CsvPath E:\Onboarding\NewHires.csv              # create accounts
 .\New-Onboard.ps1 -CsvPath E:\Onboarding\NewHires.csv -AssignLicense</pre>
 <p>The licence step only works after Entra Connect has synced the new user, so run <code>-AssignLicense</code> on a later pass if the account is not in the tenant yet.</p>
+<p><strong>Testing</strong><strong>: one user, then ten</strong></p>
+<p>These test accounts are throwaway, so use the same dry run, real run and verify routine you used for <code>jdoe</code>. Create both CSV files first. The usernames come out as first initial plus last name (<code>aarcher</code>, <code>bbrooks</code> and so on), and the script adds a number if a name is already taken.</p>
+<pre># Managers: one per department, created first
+$mgrs = @&#39;
+FirstName,LastName,Department,Title,Manager,StartDate
+Mia,Morgan,IT,IT Manager,,2027-01-04
+Noah,Nash,Finance,Finance Manager,,2027-01-04
+Olivia,Owens,Sales,Sales Manager,,2027-01-04
+&#39;@
+Set-Content -Path E:\Onboarding\BulkManagers.csv -Value $mgrs
 
+# Ten staff, each pointing at their department&#39;s manager
+$csv = @&#39;
+FirstName,LastName,Department,Title,Manager,StartDate
+Amy,Adams,IT,Technician,mmorgan,2027-01-04
+Ben,Brooks,Finance,Accountant,nnash,2027-01-04
+Cara,Chen,Sales,Representative,oowens,2027-01-04
+Dan,Diaz,IT,Analyst,mmorgan,2027-01-04
+Eva,Evans,Finance,Clerk,nnash,2027-01-04
+Finn,Foster,Sales,Representative,oowens,2027-01-04
+Gina,Grant,IT,Technician,mmorgan,2027-01-04
+Hugo,Hayes,Finance,Analyst,nnash,2027-01-04
+Iris,Ito,Sales,Coordinator,oowens,2027-01-04
+Jack,Jones,IT,Technician,mmorgan,2027-01-04
+&#39;@
+Set-Content -Path E:\Onboarding\BulkTest10.csv -Value $csv
+
+# One separate person for the one-user test (not in the ten)
+$one = @&#39;
+FirstName,LastName,Department,Title,Manager,StartDate
+Alice,Archer,IT,Technician,mmorgan,2027-01-04
+&#39;@
+Set-Content -Path E:\Onboarding\BulkTest1.csv -Value $one</pre>
+<p><strong>Step 1: Create the managers first</strong></p>
+<p>Three managers, one per department, are onboarded with the same script. They have to exist before the staff rows reference them, which also tests the manager lookup. Their usernames are <code>mmorgan</code>, <code>nnash</code> and <code>oowens</code>.</p>
+<pre>.\New-Onboard.ps1 -CsvPath E:\Onboarding\BulkManagers.csv -WhatIf
+.\New-Onboard.ps1 -CsvPath E:\Onboarding\BulkManagers.csv</pre>
+<img src="../images/powershell-lifecycle/onboard-managers.png" alt="New-Onboard.ps1 output creating mmorgan, nnash and oowens from BulkManagers.csv, adding their groups and home folders, then listing their temporary passwords" loading="lazy">
+<p><strong>Step 2: Onboard one user</strong></p>
+<pre>.\New-Onboard.ps1 -CsvPath E:\Onboarding\BulkTest1.csv -WhatIf
+Measure-Command { .\New-Onboard.ps1 -CsvPath E:\Onboarding\BulkTest1.csv | Out-Host } | Select-Object TotalSeconds</pre>
+<p><code>| Out-Host</code> keeps the temporary password table on screen. Without it, <code>Measure-Command</code> swallows the script&#39;s output and you lose the passwords.</p>
+<p><strong>Step 3: Onboard ten users</strong></p>
+<pre>.\New-Onboard.ps1 -CsvPath E:\Onboarding\BulkTest10.csv -WhatIf
+Measure-Command { .\New-Onboard.ps1 -CsvPath E:\Onboarding\BulkTest10.csv | Out-Host } | Select-Object TotalSeconds</pre>
+<p><strong>Verify</strong></p>
+<pre>$ids = Import-Csv E:\Onboarding\BulkTest10.csv | ForEach-Object { ($_.FirstName.Substring(0,1) + $_.LastName).ToLower() }
+
+# Expect 10 enabled accounts in Corp Users
+Get-ADUser -Filter * -SearchBase &#39;OU=Corp Users,DC=corp,DC=williamslabs,DC=ca&#39; -Properties Department |
+    Where-Object SamAccountName -in $ids | Select-Object SamAccountName, Department, Enabled
+
+# Expect every staff member to show their department&#39;s manager
+Get-ADUser -Filter * -SearchBase &#39;OU=Corp Users,DC=corp,DC=williamslabs,DC=ca&#39; -Properties Manager |
+    Where-Object SamAccountName -in $ids |
+    Select-Object SamAccountName, @{n=&#39;Manager&#39;;e={ if ($_.Manager) { (Get-ADUser $_.Manager).SamAccountName } }}
+
+# Expect 10 home folders, each with the user&#39;s own Modify entry
+$ids | ForEach-Object { &#39;{0}: {1}&#39; -f $_, (Test-Path &quot;\\FS-01\Home$\$_&quot;) }
+icacls &#39;\\FS-01\Home$\aadams&#39;
+
+# Expect 10 &#39;Created&#39; lines
+Get-Content &quot;C:\Logs\Lifecycle\lifecycle-$(Get-Date -Format yyyyMM).log&quot; | Select-String &#39;Created &#39;</pre>
+<p>Record the time for one user and for ten. If ten takes roughly ten times as long as one, the script is linear and safe to run on larger batches.</p>
 <h2>Offboarding script</h2>
-<p><code>Offboard.ps1</code> locks a leaver out immediately and keeps everything needed to restore or audit the account. It saves the group list first, disables the account, scrambles the password, strips group membership, moves the object to the Disabled OU, and can archive the home folder and revoke Microsoft 365 access.</p>
+<p><code>O</code><code>f</code><code>fboard.ps1</code> locks a leaver out immediately and keeps everything needed to restore or audit the account. It saves the group list first, disables the account, scrambles the password, strips group membership, moves the object to the Disabled OU, and can archive the home folder and revoke Microsoft 365 access.</p>
 <pre>&lt;#
 .SYNOPSIS
 Offboards one or more users in Active Directory (self-contained).
@@ -282,7 +385,7 @@ One or more SamAccountNames, for example jdoe or jdoe,rroe.
 Ticket or reference number recorded in the description and log. Default: N/A.
 
 .PARAMETER ArchiveHome
-Move the user's home folder to ArchiveRoot as &lt;sam&gt;_&lt;date&gt;.
+Move the user&#39;s home folder to ArchiveRoot as &lt;sam&gt;_&lt;date&gt;.
 
 .PARAMETER RevokeM365
 Revoke Microsoft 365 sign-in sessions and remove licences using Microsoft.Graph.
@@ -306,124 +409,153 @@ Log: C:\Logs\Lifecycle\lifecycle-yyyyMM.log
 Group backup: C:\Logs\Lifecycle\offboard-&lt;sam&gt;-&lt;date&gt;-groups.txt
 #&gt;
 #Requires -Modules ActiveDirectory
-[CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'High')]
+[CmdletBinding(SupportsShouldProcess, ConfirmImpact = &#39;High&#39;)]
 param(
     [Parameter(Mandatory)][string[]]$Identity,   # SamAccountName(s)
-    [string]$Ticket = 'N/A',
+    [string]$Ticket = &#39;N/A&#39;,
     [switch]$ArchiveHome,
     [switch]$RevokeM365
 )
 
 # ---------------- SETTINGS: edit for your environment ----------------
 $Config = @{
-    Server      = 'AD-01.corp.williamslabs.ca'   # pin the DC
-    DisabledOU  = 'OU=Disabled,DC=corp,DC=williamslabs,DC=ca'
-    ArchiveRoot = '\\FS-01\Archive$'
-    LogDir      = 'C:\Logs\Lifecycle'
+    Server      = &#39;AD-01.corp.williamslabs.ca&#39;   # pin the DC
+    DisabledOU  = &#39;OU=Disabled,DC=corp,DC=williamslabs,DC=ca&#39;
+    ArchiveRoot = &#39;\\FS-01\Archive$&#39;
+    LogDir      = &#39;C:\Logs\Lifecycle&#39;
 }
 # ---------------------------------------------------------------------
 
 function Write-Log {
     param(
         [Parameter(Mandatory)][string]$Message,
-        [ValidateSet('INFO','WARN','ERROR')][string]$Level = 'INFO'
+        [ValidateSet(&#39;INFO&#39;,&#39;WARN&#39;,&#39;ERROR&#39;)][string]$Level = &#39;INFO&#39;
     )
     if (-not (Test-Path $Config.LogDir)) {
         New-Item -ItemType Directory -Path $Config.LogDir -Force | Out-Null
     }
-    $line = '{0:yyyy-MM-dd HH:mm:ss} [{1}] {2}' -f (Get-Date), $Level, $Message
-    Add-Content -Path (Join-Path $Config.LogDir "lifecycle-$(Get-Date -Format yyyyMM).log") -Value $line
+    $line = &#39;{0:yyyy-MM-dd HH:mm:ss} [{1}] {2}&#39; -f (Get-Date), $Level, $Message
+    Add-Content -Path (Join-Path $Config.LogDir &quot;lifecycle-$(Get-Date -Format yyyyMM).log&quot;) -Value $line
     switch ($Level) {
-        'WARN'  { Write-Warning $Message }
-        'ERROR' { Write-Host $line -ForegroundColor Red }
+        &#39;WARN&#39;  { Write-Warning $Message }
+        &#39;ERROR&#39; { Write-Host $line -ForegroundColor Red }
         default { Write-Host $line }
     }
 }
 
 function New-RandomPassword {
-    param([int]$Length = 16)
-    $chars = [char[]]'abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789!@#$%&amp;*'
-    $bytes = New-Object byte[] $Length
-    [System.Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($bytes)
-    -join ($bytes | ForEach-Object { $chars[$_ % $chars.Length] })
+    param([ValidateRange(12, 128)][int]$Length = 16)
+
+    # Look-alike characters (l, I, O, 0, 1) are left out so passwords are easy to read out
+    $sets = @(
+        &#39;abcdefghijkmnpqrstuvwxyz&#39;
+        &#39;ABCDEFGHJKLMNPQRSTUVWXYZ&#39;
+        &#39;23456789&#39;
+        &#39;!@#$%&amp;*&#39;
+    )
+    $all = $sets -join &#39;&#39;
+    $rng = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+
+    # Unbiased random number from 0 to ($Max - 1), works in Windows PowerShell 5.1 and 7
+    function Get-RandomIndex([int]$Max) {
+        $bytes = New-Object byte[] 4
+        $limit = [uint32]::MaxValue - ([uint32]::MaxValue % $Max)
+        do { $rng.GetBytes($bytes); $n = [BitConverter]::ToUInt32($bytes, 0) } while ($n -ge $limit)
+        [int]($n % $Max)
+    }
+
+    try {
+        # One character from every set guarantees the domain&#39;s complexity rules
+        $chars = [System.Collections.Generic.List[char]]::new()
+        foreach ($set in $sets) { $chars.Add($set[(Get-RandomIndex $set.Length)]) }
+        while ($chars.Count -lt $Length) { $chars.Add($all[(Get-RandomIndex $all.Length)]) }
+
+        # Fisher-Yates shuffle so the guaranteed characters are not always first
+        for ($i = $chars.Count - 1; $i -gt 0; $i--) {
+            $j = Get-RandomIndex ($i + 1)
+            $chars[$i], $chars[$j] = $chars[$j], $chars[$i]
+        }
+        -join $chars
+    }
+    finally { $rng.Dispose() }
 }
 
 Import-Module ActiveDirectory -ErrorAction Stop
-$PSDefaultParameterValues['*-AD*:Server'] = $Config.Server
+$PSDefaultParameterValues[&#39;*-AD*:Server&#39;] = $Config.Server
 
 if ($RevokeM365) {
     Import-Module Microsoft.Graph.Users, Microsoft.Graph.Users.Actions -ErrorAction Stop
-    Connect-MgGraph -Scopes 'User.ReadWrite.All' -NoWelcome
+    Connect-MgGraph -Scopes &#39;User.ReadWrite.All&#39; -NoWelcome
 }
 
 foreach ($sam in $Identity) {
     try {
         $user = Get-ADUser -Identity $sam -Properties MemberOf, Manager, HomeDirectory, Description, DirectReports
-        $stamp = Get-Date -Format 'yyyy-MM-dd'
-        Write-Log "Offboarding started for $sam (ticket $Ticket)"
+        $stamp = Get-Date -Format &#39;yyyy-MM-dd&#39;
+        Write-Log &quot;Offboarding started for $sam (ticket $Ticket)&quot;
 
         if ($user.DirectReports) {
-            Write-Log "$sam still has direct reports: reassign them to a new manager." 'WARN'
+            Write-Log &quot;$sam still has direct reports: reassign them to a new manager.&quot; &#39;WARN&#39;
         }
 
         # 1. Record group membership so access can be restored or audited
-        $groups = Get-ADPrincipalGroupMembership -Identity $user | Where-Object Name -ne 'Domain Users'
-        $groupFile = Join-Path $Config.LogDir "offboard-$sam-$stamp-groups.txt"
-        if ($PSCmdlet.ShouldProcess($sam, 'Export group membership')) {
+        $groups = Get-ADPrincipalGroupMembership -Identity $user | Where-Object Name -ne &#39;Domain Users&#39;
+        $groupFile = Join-Path $Config.LogDir &quot;offboard-$sam-$stamp-groups.txt&quot;
+        if ($PSCmdlet.ShouldProcess($sam, &#39;Export group membership&#39;)) {
             $groups.Name | Set-Content -Path $groupFile
-            Write-Log "Saved $($groups.Count) groups to $groupFile"
+            Write-Log &quot;Saved $($groups.Count) groups to $groupFile&quot;
         }
 
         # 2. Disable, scramble password, stamp description
-        if ($PSCmdlet.ShouldProcess($sam, 'Disable account and reset password')) {
+        if ($PSCmdlet.ShouldProcess($sam, &#39;Disable account and reset password&#39;)) {
             Disable-ADAccount -Identity $user
             Set-ADAccountPassword -Identity $user -Reset `
                 -NewPassword (ConvertTo-SecureString (New-RandomPassword 32) -AsPlainText -Force)
             Set-ADUser -Identity $user `
-                -Description "Disabled $stamp - ticket $Ticket - was: $($user.Description)"
-            Write-Log "Disabled $sam and reset password"
+                -Description &quot;Disabled $stamp - ticket $Ticket - was: $($user.Description)&quot;
+            Write-Log &quot;Disabled $sam and reset password&quot;
         }
 
         # 3. Remove from all groups except Domain Users
-        if ($PSCmdlet.ShouldProcess($sam, 'Remove group memberships')) {
+        if ($PSCmdlet.ShouldProcess($sam, &#39;Remove group memberships&#39;)) {
             foreach ($g in $groups) {
                 Remove-ADGroupMember -Identity $g -Members $user -Confirm:$false
-                Write-Log "Removed $sam from $($g.Name)"
+                Write-Log &quot;Removed $sam from $($g.Name)&quot;
             }
         }
 
         # 4. Archive the home folder
         if ($ArchiveHome -and $user.HomeDirectory -and (Test-Path $user.HomeDirectory)) {
-            $dest = Join-Path $Config.ArchiveRoot "${sam}_$stamp"
-            if ($PSCmdlet.ShouldProcess($user.HomeDirectory, "Move to $dest")) {
+            $dest = Join-Path $Config.ArchiveRoot &quot;${sam}_$stamp&quot;
+            if ($PSCmdlet.ShouldProcess($user.HomeDirectory, &quot;Move to $dest&quot;)) {
                 Move-Item -Path $user.HomeDirectory -Destination $dest
-                Write-Log "Archived home folder to $dest"
+                Write-Log &quot;Archived home folder to $dest&quot;
             }
         }
 
         # 5. Revoke Microsoft 365 sessions and licences
         if ($RevokeM365) {
             $upn = $user.UserPrincipalName
-            if ($PSCmdlet.ShouldProcess($upn, 'Revoke sign-in sessions and licences')) {
+            if ($PSCmdlet.ShouldProcess($upn, &#39;Revoke sign-in sessions and licences&#39;)) {
                 Revoke-MgUserSignInSession -UserId $upn | Out-Null
                 $skus = (Get-MgUserLicenseDetail -UserId $upn).SkuId
                 if ($skus) {
                     Set-MgUserLicense -UserId $upn -AddLicenses @() -RemoveLicenses $skus | Out-Null
                 }
-                Write-Log "Revoked sessions and removed $(@($skus).Count) licence(s) for $upn"
+                Write-Log &quot;Revoked sessions and removed $(@($skus).Count) licence(s) for $upn&quot;
             }
         }
 
         # 6. Move to the Disabled OU (last, so earlier steps can still find the object)
-        if ($PSCmdlet.ShouldProcess($sam, "Move to $($Config.DisabledOU)")) {
+        if ($PSCmdlet.ShouldProcess($sam, &quot;Move to $($Config.DisabledOU)&quot;)) {
             Move-ADObject -Identity $user.DistinguishedName -TargetPath $Config.DisabledOU
-            Write-Log "Moved $sam to Disabled OU"
+            Write-Log &quot;Moved $sam to Disabled OU&quot;
         }
 
-        Write-Log "Offboarding complete for $sam"
+        Write-Log &quot;Offboarding complete for $sam&quot;
     }
     catch {
-        Write-Log "Offboarding failed for ${sam}: $_" 'ERROR'
+        Write-Log &quot;Offboarding failed for ${sam}: $_&quot; &#39;ERROR&#39;
     }
 }</pre>
 <p><strong>Usage</strong></p>
@@ -431,7 +563,32 @@ foreach ($sam in $Identity) {
 .\offboard.ps1 -Identity jdoe -Ticket INC-1042 -ArchiveHome -RevokeM365
 .\offboard.ps1 -Identity jdoe,rroe -Ticket INC-1050 -Confirm:$false</pre>
 <p>The script does not delete anything. After your retention period (commonly 30 to 90 days), remove the account by hand: <code>Remove-ADUser -Identity jdoe</code>. Mailbox conversion to shared, forwarding and manager access to OneDrive are Exchange and Entra steps, so they sit on the checklist below instead of in the script.</p>
+<p><strong>Bulk test: one user, then ten</strong></p>
+<p>Run this after the onboarding bulk test so the same accounts are offboarded. Use <code>-WhatIf</code> first. For ten users, add <code>-Confirm:$false</code>, because <code>ConfirmImpact</code> is High and the script would otherwise prompt at every step for every user.</p>
+<pre>$ids = Import-Csv E:\Onboarding\BulkTest10.csv | ForEach-Object { ($_.FirstName.Substring(0,1) + $_.LastName).ToLower() }
 
+# Test 1: one user
+.\offboard.ps1 -Identity aarcher -Ticket BULK-001 -ArchiveHome -WhatIf
+Measure-Command { .\offboard.ps1 -Identity aarcher -Ticket BULK-001 -ArchiveHome -Confirm:$false } | Select-Object TotalSeconds
+
+# Test 2: the ten
+.\offboard.ps1 -Identity $ids -Ticket BULK-002 -ArchiveHome -WhatIf
+Measure-Command { .\offboard.ps1 -Identity $ids -Ticket BULK-002 -ArchiveHome -Confirm:$false } | Select-Object TotalSeconds</pre>
+<img src="../images/powershell-lifecycle/offboard-timed.png" alt="offboard.ps1 dry run with -WhatIf for aarcher, then a timed real run that saves 4 groups, removes them, archives the home folder and moves the account to the Disabled OU in about one second" loading="lazy">
+<p><strong>Verify</strong></p>
+<pre># Expect 10 disabled accounts in the Disabled OU, each with a ticket note in the description
+Get-ADUser -Filter * -SearchBase &#39;OU=Disabled,DC=corp,DC=williamslabs,DC=ca&#39; -Properties Description |
+    Where-Object SamAccountName -in $ids | Select-Object SamAccountName, Enabled, Description
+
+# Expect 10 archive folders and no home folders left
+Get-ChildItem &#39;\\FS-01\Archive$&#39; -Directory | Where-Object Name -match ($ids -join &#39;|&#39;)
+$ids | ForEach-Object { &#39;{0}: {1}&#39; -f $_, (Test-Path &quot;\\FS-01\Home$\$_&quot;) }
+
+
+
+# Expect 10 group backup files
+Get-ChildItem C:\Logs\Lifecycle -Filter &#39;offboard-*-groups.txt&#39; | Where-Object Name -match ($ids -join &#39;|&#39;)</pre>
+<img src="../images/powershell-lifecycle/bulk-offboard-check.png" alt="The Archive$ share listing ten archived home folders dated 2026-11-23, and Test-Path showing none of the ten home folders remain on Home$" loading="lazy">
 <h2>Reactivation script</h2>
 <p><code>reactivate.ps1</code> reverses an offboarding when an employee returns. It refuses to touch an account that is already enabled. It resets the password to a new random one (change forced at first logon), enables the account, restores the original description, moves the user back to the Users OU, and re-adds the groups saved by <code>offboard.ps1</code>. If no group backup exists it falls back to the baseline and department groups. It can also move the archived home folder back and re-assign the Microsoft 365 licence.</p>
 <pre>&lt;#
@@ -443,7 +600,7 @@ For a returning employee: resets the password to a random value (change forced a
 first logon), enables the account, restores the original description, moves the
 user back to the Users OU, and restores group membership from the backup file that
 offboard.ps1 saved (offboard-&lt;sam&gt;-&lt;date&gt;-groups.txt). If no backup is found it
-adds the baseline groups plus the groups for the user's Department. Optionally
+adds the baseline groups plus the groups for the user&#39;s Department. Optionally
 restores the archived home folder and re-assigns the Microsoft 365 licence.
 The temporary password is shown once at the end and is never logged.
 Edit the $Config block below before the first run.
@@ -484,7 +641,7 @@ Log: C:\Logs\Lifecycle\lifecycle-yyyyMM.log
 [CmdletBinding(SupportsShouldProcess)]
 param(
     [Parameter(Mandatory)][string[]]$Identity,   # SamAccountName(s)
-    [string]$Ticket = 'N/A',
+    [string]$Ticket = &#39;N/A&#39;,
     [string]$Manager,
     [switch]$RestoreHome,
     [switch]$AssignLicense
@@ -492,206 +649,243 @@ param(
 
 # ---------------- SETTINGS: edit for your environment ----------------
 $Config = @{
-    Server         = 'AD-01.corp.williamslabs.ca'   # pin the DC
-    NetbiosName    = 'CORP'
-    UsersOU        = 'OU=Corp Users,DC=corp,DC=williamslabs,DC=ca'
-    HomeRoot       = '\\FS-01\Home$'
-    ArchiveRoot    = '\\FS-01\Archive$'
-    LogDir         = 'C:\Logs\Lifecycle'
-    BaselineGroups = @('All-Staff', 'VPN-Users')
+    Server         = &#39;AD-01.corp.williamslabs.ca&#39;   # pin the DC
+    NetbiosName    = &#39;CORP&#39;
+    UsersOU        = &#39;OU=Corp Users,DC=corp,DC=williamslabs,DC=ca&#39;
+    HomeRoot       = &#39;\\FS-01\Home$&#39;
+    ArchiveRoot    = &#39;\\FS-01\Archive$&#39;
+    LogDir         = &#39;C:\Logs\Lifecycle&#39;
+    BaselineGroups = @(&#39;All-Staff&#39;, &#39;VPN-Users&#39;)
     DeptGroups     = @{            # Department -&gt; extra security groups
-        'IT'      = @('IT-Staff', 'Helpdesk')
-        'Finance' = @('Finance-Staff')
-        'Sales'   = @('Sales-Staff')
+        &#39;IT&#39;      = @(&#39;IT-Staff&#39;, &#39;Helpdesk&#39;)
+        &#39;Finance&#39; = @(&#39;Finance-Staff&#39;)
+        &#39;Sales&#39;   = @(&#39;Sales-Staff&#39;)
     }
-    LicenseSku     = 'ENTERPRISEPACK'   # Microsoft 365 SKU part number
+    LicenseSku     = &#39;ENTERPRISEPACK&#39;   # Microsoft 365 SKU part number
 }
 # ---------------------------------------------------------------------
 
 function Write-Log {
     param(
         [Parameter(Mandatory)][string]$Message,
-        [ValidateSet('INFO','WARN','ERROR')][string]$Level = 'INFO'
+        [ValidateSet(&#39;INFO&#39;,&#39;WARN&#39;,&#39;ERROR&#39;)][string]$Level = &#39;INFO&#39;
     )
     if (-not (Test-Path $Config.LogDir)) {
         New-Item -ItemType Directory -Path $Config.LogDir -Force | Out-Null
     }
-    $line = '{0:yyyy-MM-dd HH:mm:ss} [{1}] {2}' -f (Get-Date), $Level, $Message
-    Add-Content -Path (Join-Path $Config.LogDir "lifecycle-$(Get-Date -Format yyyyMM).log") -Value $line
+    $line = &#39;{0:yyyy-MM-dd HH:mm:ss} [{1}] {2}&#39; -f (Get-Date), $Level, $Message
+    Add-Content -Path (Join-Path $Config.LogDir &quot;lifecycle-$(Get-Date -Format yyyyMM).log&quot;) -Value $line
     switch ($Level) {
-        'WARN'  { Write-Warning $Message }
-        'ERROR' { Write-Host $line -ForegroundColor Red }
+        &#39;WARN&#39;  { Write-Warning $Message }
+        &#39;ERROR&#39; { Write-Host $line -ForegroundColor Red }
         default { Write-Host $line }
     }
 }
 
 function New-RandomPassword {
-    param([int]$Length = 16)
-    $chars = [char[]]'abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789!@#$%&amp;*'
-    $bytes = New-Object byte[] $Length
-    [System.Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($bytes)
-    -join ($bytes | ForEach-Object { $chars[$_ % $chars.Length] })
+    param([ValidateRange(12, 128)][int]$Length = 16)
+
+    # Look-alike characters (l, I, O, 0, 1) are left out so passwords are easy to read out
+    $sets = @(
+        &#39;abcdefghijkmnpqrstuvwxyz&#39;
+        &#39;ABCDEFGHJKLMNPQRSTUVWXYZ&#39;
+        &#39;23456789&#39;
+        &#39;!@#$%&amp;*&#39;
+    )
+    $all = $sets -join &#39;&#39;
+    $rng = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+
+    # Unbiased random number from 0 to ($Max - 1), works in Windows PowerShell 5.1 and 7
+    function Get-RandomIndex([int]$Max) {
+        $bytes = New-Object byte[] 4
+        $limit = [uint32]::MaxValue - ([uint32]::MaxValue % $Max)
+        do { $rng.GetBytes($bytes); $n = [BitConverter]::ToUInt32($bytes, 0) } while ($n -ge $limit)
+        [int]($n % $Max)
+    }
+
+    try {
+        # One character from every set guarantees the domain&#39;s complexity rules
+        $chars = [System.Collections.Generic.List[char]]::new()
+        foreach ($set in $sets) { $chars.Add($set[(Get-RandomIndex $set.Length)]) }
+        while ($chars.Count -lt $Length) { $chars.Add($all[(Get-RandomIndex $all.Length)]) }
+
+        # Fisher-Yates shuffle so the guaranteed characters are not always first
+        for ($i = $chars.Count - 1; $i -gt 0; $i--) {
+            $j = Get-RandomIndex ($i + 1)
+            $chars[$i], $chars[$j] = $chars[$j], $chars[$i]
+        }
+        -join $chars
+    }
+    finally { $rng.Dispose() }
 }
 
 Import-Module ActiveDirectory -ErrorAction Stop
-$PSDefaultParameterValues['*-AD*:Server'] = $Config.Server
+$PSDefaultParameterValues[&#39;*-AD*:Server&#39;] = $Config.Server
 
 if ($AssignLicense) {
     Import-Module Microsoft.Graph.Users.Actions -ErrorAction Stop
-    Connect-MgGraph -Scopes 'User.ReadWrite.All','Organization.Read.All' -NoWelcome
+    Connect-MgGraph -Scopes &#39;User.ReadWrite.All&#39;,&#39;Organization.Read.All&#39; -NoWelcome
     $sku = Get-MgSubscribedSku | Where-Object SkuPartNumber -eq $Config.LicenseSku
-    if (-not $sku) { throw "Licence SKU '$($Config.LicenseSku)' not found." }
+    if (-not $sku) { throw &quot;Licence SKU &#39;$($Config.LicenseSku)&#39; not found.&quot; }
 }
 
 $results = foreach ($sam in $Identity) {
     try {
         $user  = Get-ADUser -Identity $sam -Properties Description, Department, HomeDirectory
-        $stamp = Get-Date -Format 'yyyy-MM-dd'
+        $stamp = Get-Date -Format &#39;yyyy-MM-dd&#39;
 
         if ($user.Enabled) {
-            Write-Log "$sam is already enabled, skipping." 'WARN'
+            Write-Log &quot;$sam is already enabled, skipping.&quot; &#39;WARN&#39;
             continue
         }
-        Write-Log "Reactivation started for $sam (ticket $Ticket)"
+        Write-Log &quot;Reactivation started for $sam (ticket $Ticket)&quot;
 
         # 1. New password, enable, restore the original description
         $pw   = New-RandomPassword
         $orig = $user.Description
-        if ($orig -match '^Disabled .+? - ticket .+? - was: (.*)$') { $orig = $Matches[1] }
-        $desc = "$orig (reactivated $stamp, ticket $Ticket)".Trim()
-        if ($PSCmdlet.ShouldProcess($sam, 'Reset password and enable account')) {
+        if ($orig -match &#39;^Disabled .+? - ticket .+? - was: (.*)$&#39;) { $orig = $Matches[1] }
+        $desc = &quot;$orig (reactivated $stamp, ticket $Ticket)&quot;.Trim()
+        if ($PSCmdlet.ShouldProcess($sam, &#39;Reset password and enable account&#39;)) {
             Set-ADAccountPassword -Identity $user -Reset -NewPassword (ConvertTo-SecureString $pw -AsPlainText -Force)
             Set-ADUser -Identity $user -ChangePasswordAtLogon $true -Description $desc
             Enable-ADAccount -Identity $user
-            Write-Log "Enabled $sam with a new temporary password"
+            Write-Log &quot;Enabled $sam with a new temporary password&quot;
         }
 
         # 2. Move back to the Users OU (the DN changes, so use $sam from here on)
-        if ($PSCmdlet.ShouldProcess($sam, "Move to $($Config.UsersOU)")) {
+        if ($PSCmdlet.ShouldProcess($sam, &quot;Move to $($Config.UsersOU)&quot;)) {
             Move-ADObject -Identity $user.DistinguishedName -TargetPath $Config.UsersOU
-            Write-Log "Moved $sam to $($Config.UsersOU)"
+            Write-Log &quot;Moved $sam to $($Config.UsersOU)&quot;
         }
 
         # 3. Optional new manager
         if ($Manager) {
-            $mgr = Get-ADUser -Filter "SamAccountName -eq '$Manager'"
+            $mgr = Get-ADUser -Filter &quot;SamAccountName -eq &#39;$Manager&#39;&quot;
             if ($mgr) {
-                if ($PSCmdlet.ShouldProcess($sam, "Set manager $Manager")) {
+                if ($PSCmdlet.ShouldProcess($sam, &quot;Set manager $Manager&quot;)) {
                     Set-ADUser -Identity $sam -Manager $mgr.DistinguishedName
-                    Write-Log "Set manager of $sam to $Manager"
+                    Write-Log &quot;Set manager of $sam to $Manager&quot;
                 }
             }
-            else { Write-Log "Manager '$Manager' not found, continuing without a manager" 'INFO' }
+            else { Write-Log &quot;Manager &#39;$Manager&#39; not found, continuing without a manager&quot; &#39;INFO&#39; }
         }
 
         # 4. Restore groups from the offboarding backup, else baseline + department
-        $backup = Get-ChildItem -Path $Config.LogDir -Filter "offboard-$sam-*-groups.txt" -ErrorAction SilentlyContinue |
+        $backup = Get-ChildItem -Path $Config.LogDir -Filter &quot;offboard-$sam-*-groups.txt&quot; -ErrorAction SilentlyContinue |
             Sort-Object LastWriteTime -Descending | Select-Object -First 1
         if ($backup) {
             $names = Get-Content $backup.FullName | Where-Object { $_ }
-            Write-Log "Restoring groups from $($backup.Name)"
+            Write-Log &quot;Restoring groups from $($backup.Name)&quot;
         }
         else {
             $names = @($Config.BaselineGroups) + @($Config.DeptGroups[$user.Department])
-            Write-Log "No group backup found for $sam, using baseline and department groups" 'WARN'
+            Write-Log &quot;No group backup found for $sam, using baseline and department groups&quot; &#39;WARN&#39;
         }
-        if ($PSCmdlet.ShouldProcess($sam, 'Restore group memberships')) {
+        if ($PSCmdlet.ShouldProcess($sam, &#39;Restore group memberships&#39;)) {
             foreach ($n in $names | Where-Object { $_ }) {
                 try {
-                    $grp = Get-ADGroup -Filter "Name -eq '$n'"
+                    $grp = Get-ADGroup -Filter &quot;Name -eq &#39;$n&#39;&quot;
                     Add-ADGroupMember -Identity $grp -Members $sam
-                    Write-Log "Added $sam to $n"
-                } catch { Write-Log "Group '$n' failed for ${sam}: $_" 'WARN' }
+                    Write-Log &quot;Added $sam to $n&quot;
+                } catch { Write-Log &quot;Group &#39;$n&#39; failed for ${sam}: $_&quot; &#39;WARN&#39; }
             }
         }
 
         # 5. Optional: move the archived home folder back
         if ($RestoreHome) {
             $homePath = if ($user.HomeDirectory) { $user.HomeDirectory } else { Join-Path $Config.HomeRoot $sam }
-            $archive  = Get-ChildItem -Path $Config.ArchiveRoot -Directory -Filter "${sam}_*" -ErrorAction SilentlyContinue |
+            $archive  = Get-ChildItem -Path $Config.ArchiveRoot -Directory -Filter &quot;${sam}_*&quot; -ErrorAction SilentlyContinue |
                 Sort-Object Name -Descending | Select-Object -First 1
             if (Test-Path $homePath) {
-                Write-Log "Home folder $homePath already exists, not restoring." 'WARN'
+                Write-Log &quot;Home folder $homePath already exists, not restoring.&quot; &#39;WARN&#39;
             }
             elseif ($archive) {
-                if ($PSCmdlet.ShouldProcess($archive.FullName, "Move to $homePath")) {
+                if ($PSCmdlet.ShouldProcess($archive.FullName, &quot;Move to $homePath&quot;)) {
                     Move-Item -Path $archive.FullName -Destination $homePath
-                    # The move drops the user's own permission (the archive share is admin-only), so grant it again
+                    # The move drops the user&#39;s own permission (the archive share is admin-only), so grant it again
                     $acl  = Get-Acl $homePath
                     $rule = New-Object System.Security.AccessControl.FileSystemAccessRule(
-                        "$($Config.NetbiosName)\$sam", 'Modify',
-                        'ContainerInherit,ObjectInherit', 'None', 'Allow')
+                        &quot;$($Config.NetbiosName)\$sam&quot;, &#39;Modify&#39;,
+                        &#39;ContainerInherit,ObjectInherit&#39;, &#39;None&#39;, &#39;Allow&#39;)
                     $acl.AddAccessRule($rule)
                     Set-Acl -Path $homePath -AclObject $acl
-                    Set-ADUser -Identity $sam -HomeDirectory $homePath -HomeDrive 'H:'
-                    Write-Log "Restored home folder from $($archive.Name) to $homePath"
+                    Set-ADUser -Identity $sam -HomeDirectory $homePath -HomeDrive &#39;H:&#39;
+                    Write-Log &quot;Restored home folder from $($archive.Name) to $homePath&quot;
                 }
             }
-            else { Write-Log "No archive found for $sam in $($Config.ArchiveRoot)" 'WARN' }
+            else { Write-Log &quot;No archive found for $sam in $($Config.ArchiveRoot)&quot; &#39;WARN&#39; }
         }
 
         # 6. Optional Microsoft 365 licence (account must have synced to Entra ID)
         if ($AssignLicense) {
             $upn = (Get-ADUser -Identity $sam).UserPrincipalName
-            if ($PSCmdlet.ShouldProcess($upn, "Assign $($Config.LicenseSku)")) {
+            if ($PSCmdlet.ShouldProcess($upn, &quot;Assign $($Config.LicenseSku)&quot;)) {
                 Set-MgUserLicense -UserId $upn -AddLicenses @{ SkuId = $sku.SkuId } -RemoveLicenses @() | Out-Null
-                Write-Log "Assigned $($Config.LicenseSku) to $upn"
+                Write-Log &quot;Assigned $($Config.LicenseSku) to $upn&quot;
             }
         }
 
-        Write-Log "Reactivation complete for $sam"
+        Write-Log &quot;Reactivation complete for $sam&quot;
         if (-not $WhatIfPreference) { [pscustomobject]@{ User = $sam; TempPassword = $pw } }
     }
     catch {
-        Write-Log "Reactivation failed for ${sam}: $_" 'ERROR'
+        Write-Log &quot;Reactivation failed for ${sam}: $_&quot; &#39;ERROR&#39;
     }
 }
 
 $results | Format-Table -AutoSize
-Write-Host 'Hand each temporary password over securely, then clear this window.' -ForegroundColor Yellow</pre>
+Write-Host &#39;Hand each temporary password over securely, then clear this window.&#39; -ForegroundColor Yellow</pre>
 <p><strong>Usage</strong></p>
-<pre>.\reactivate.ps1 -Identity jdoe -Ticket INC-2001 -WhatIf
-.\reactivate.ps1 -Identity jdoe -Ticket INC-2001 -Manager bjones -RestoreHome
-.\reactivate.ps1 -Identity jdoe -Ticket INC-2001 -RestoreHome -AssignLicense</pre>
+<pre>.\reactivate.ps1 -Identity eevans -Ticket INC-2001 -WhatIf
+.\reactivate.ps1 -Identity eevans -Ticket INC-2001 -Manager nnash -RestoreHome
+.\reactivate.ps1 -Identity eevans -Ticket INC-2001 -RestoreHome -AssignLicense</pre>
 <p>Run it from the same machine that ran <code>offboard.ps1</code>, or copy the <code>offboard-&lt;sam&gt;-&lt;date&gt;-groups.txt</code> file over, since that file is how the original access is restored. Review the restored groups before handing the account back: a returning employee may be in a different role.</p>
+<img src="../images/powershell-lifecycle/reactivate-restore.png" alt="reactivate.ps1 restoring eevans with manager nnash and the home folder, next to File Explorer showing the restored eevans folder under E:\Home" loading="lazy">
 <p><strong>Verification commands</strong></p>
 <pre># Confirm an onboarded user
-Get-ADUser jdoe -Properties Enabled, MemberOf, HomeDirectory, Manager |
-    Select-Object Name, Enabled, HomeDirectory, Manager, @{n='Groups';e={$_.MemberOf.Count}}
+Get-ADUser eevans -Properties Enabled, MemberOf, HomeDirectory, Manager |
+    Select-Object Name, Enabled, HomeDirectory, Manager, @{n=&#39;Groups&#39;;e={$_.MemberOf.Count}}
 
 # Confirm an offboarded user
-Get-ADUser jdoe -Properties Enabled, MemberOf, Description |
-    Select-Object Name, Enabled, DistinguishedName, Description, @{n='Groups';e={$_.MemberOf.Count}}
+Get-ADUser aarcher -Properties Enabled, MemberOf, Description |
+    Select-Object Name, Enabled, DistinguishedName, Description, @{n=&#39;Groups&#39;;e={$_.MemberOf.Count}}
 
 # All disabled accounts older than 90 days (deletion candidates)
-Search-ADAccount -AccountDisabled -UsersOnly -SearchBase 'OU=Disabled,DC=corp,DC=williamslabs,DC=ca' |
+Search-ADAccount -AccountDisabled -UsersOnly -SearchBase &#39;OU=Disabled,DC=corp,DC=williamslabs,DC=ca&#39; |
     Get-ADUser -Properties WhenChanged | Where-Object WhenChanged -lt (Get-Date).AddDays(-90)
 
-# Review this month's log
-Get-Content "C:\Logs\Lifecycle\lifecycle-$(Get-Date -Format yyyyMM).log" -Tail 50</pre>
-
+# Review this month&#39;s log
+Get-Content &quot;C:\Logs\Lifecycle\lifecycle-$(Get-Date -Format yyyyMM).log&quot; -Tail 50</pre>
 <h2>Test results and lessons learned</h2>
-<p>All three scripts were tested end to end in the lab (domain <code>corp.williamslabs.ca</code>, DC <code>AD-01</code>, file server <code>FS-01</code>) using a throwaway user, <code>jdoe</code>. Each run was dry-run with <code>-WhatIf</code> first, then run for real. Times are from the server log (server clock).</p>
-<table class="data-table">
-<thead><tr><th>Stage</th><th>Command</th><th>Result</th></tr></thead>
-<tbody>
-<tr><td>Onboard (17:35)</td><td><code>.\New-Onboard.ps1 -CsvPath E:\Onboarding\NewHires.csv</code></td><td>User created, 3 groups added, home folder <code>\\FS-01\Home$\jdoe</code> created. Missing manager <code>bjones</code> was logged and skipped.</td></tr>
-<tr><td>Offboard (18:47)</td><td><code>.\offboard.ps1 -Identity jdoe -Ticket TEST-001 -ArchiveHome</code></td><td>Groups saved to file, account disabled, 3 groups removed, home folder archived to <code>\\FS-01\Archive$\jdoe_2026-11-20</code>, user moved to the Disabled OU.</td></tr>
-<tr><td>Reactivate (19:27)</td><td><code>.\reactivate.ps1 -Identity jdoe -Ticket INC-2001 -RestoreHome</code></td><td>Account enabled with a new temporary password, moved back to Corp Users, 3 groups restored from the backup file, home folder restored, description restored with a reactivation note.</td></tr>
-</tbody>
-</table>
+<p>All three scripts were tested end to end in the lab (domain <code>corp.williamslabs.ca</code>, DC <code>AD-01</code>, file server <code>FS-01</code>). Each run was dry-run with <code>-WhatIf</code> first, then run for real. Times are from the server log (server clock).</p>
+<table class="data-table"><thead><tr><th>Stage</th><th>Command</th><th>Result</th></tr></thead><tbody><tr><td>Onboard one user, jdoe (Nov 20, 17:35)</td><td><code>.\New-Onboard.ps1 -CsvPath E:\Onboarding\NewHires.csv</code></td><td>User created, 3 groups added, home folder <code>\\FS-01\Home$\jdoe</code> created. Missing manager <code>bjones</code> was logged and skipped.</td></tr><tr><td>Offboard, jdoe (Nov 20, 18:47)</td><td><code>.\offboard.ps1 -Identity jdoe -Ticket TEST-001 -ArchiveHome</code></td><td>Groups saved to file, account disabled, 3 groups removed, home folder archived to <code>\\FS-01\Archive$\jdoe_2026-11-20</code>, user moved to the Disabled OU.</td></tr><tr><td>Reactivate, jdoe (Nov 20, 19:27)</td><td><code>.\reactivate.ps1 -Identity jdoe -Ticket INC-2001 -RestoreHome</code></td><td>Account enabled with a new temporary password, moved back to Corp Users, 3 groups restored from the backup file, home folder restored, description restored with a reactivation note.</td></tr><tr><td>Onboard three managers (Nov 23)</td><td><code>.\New-Onboard.ps1 -CsvPath E:\Onboarding\BulkManagers.csv</code></td><td><code>mmorgan</code> (IT), <code>nnash</code> (Finance) and <code>oowens</code> (Sales) created. Their staff were later linked to them, which confirmed the accounts exist.</td></tr><tr><td>Onboard one user, aarcher (09:05)</td><td><code>.\New-Onboard.ps1 -CsvPath E:\Onboarding\BulkTest1.csv</code></td><td>Created in 0.41 seconds with 4 groups and a home folder. Manager <code>mmorgan</code> was set.</td></tr><tr><td>Onboard ten users (09:11)</td><td><code>.\New-Onboard.ps1 -CsvPath E:\Onboarding\BulkTest10.csv</code></td><td>8 created in 2.4 seconds (about 0.3 seconds each). Two failed on password complexity and the batch carried on.</td></tr><tr><td>Retest the two failures (09:53)</td><td><code>.\New-Onboard.ps1 -CsvPath E:\Onboarding\BulkRetest2.csv</code></td><td><code>bbrooks</code> and <code>ffoster</code> created after deleting the leftover disabled accounts. Managers <code>nnash</code> and <code>oowens</code> confirmed, both accounts enabled.</td></tr><tr><td>Duplicate names (10:00)</td><td>Same CSV run a second time</td><td><code>bbrooks2</code> and <code>ffoster2</code> created with home folders and no name clash.</td></tr><tr><td>Password generator check</td><td>10,000 passwords from <code>New-RandomPassword</code></td><td>None was missing a lowercase letter, uppercase letter, digit or symbol.</td></tr></tbody></table>
 <p><strong>Problems found and fixed during testing</strong></p>
 <ul>
-<li><strong>Home folder permissions lost on reactivation.</strong> After the restore, <code>icacls</code> showed only Domain Admins and SYSTEM; the user's own <code>CORP\jdoe</code> Modify permission was gone. Moving a folder between the <code>Home$</code> and <code>Archive$</code> shares is done as a copy and delete, so the folder takes the permissions of the folder it lands in, and the archive share is admin-only. Fix: <code>reactivate.ps1</code> now re-grants the user Modify rights after <code>-RestoreHome</code>. For an account already affected, repair it by hand with <code>icacls '\\FS-01\Home$\jdoe' /grant 'CORP\jdoe:(OI)(CI)M'</code>.</li>
+<li><strong>Home folder permissions lost on reactivation.</strong> After the restore, <code>icacls</code> showed only Domain Admins and SYSTEM; the user&#39;s own <code>CORP\jdoe</code> Modify permission was gone. Moving a folder between the <code>Home$</code> and <code>Archive$</code> shares is done as a copy and delete, so the folder takes the permissions of the folder it lands in, and the archive share is admin-only. Fix: <code>reactivate.ps1</code> now re-grants the user Modify rights after <code>-RestoreHome</code>. For an account already affected, repair it by hand with <code>icacls &#39;\\FS-01\Home$\jdoe&#39; /grant &#39;CORP\jdoe:(OI)(CI)M&#39;</code>.</li>
 <li><strong>Fake password shown during <code>-WhatIf</code>.</strong> The temporary password table appeared in dry runs even though no password was set. <code>reactivate.ps1</code> now prints it only on real runs.</li>
 <li><strong>Wrong paths and hostnames.</strong> Early runs failed on a non-existent OU path, a mistyped file server name and a domain controller timeout. The scripts now pin the DC with <code>-Server</code> and use the real OU and server names.</li>
 <li><strong>Missing manager.</strong> A manager not found in AD no longer matters; the script logs it as informational and continues.</li>
 </ul>
+<ul>
+<li><strong>Random passwords sometimes failed the domain rules.</strong> The ten-user onboarding test created 8 accounts in 2.4 seconds, but two (Ben Brooks and Finn Foster) failed with &quot;The password does not meet the length, complexity, or history requirement of the domain&quot;. The old generator picked characters at random, so some passwords lacked three of the four character types. The other eight users were unaffected, which confirmed that one failure does not stop the batch. Fix: <code>New-RandomPassword</code> in all three scripts now takes one character from each of lowercase, uppercase, digits and symbols, fills the rest at random and shuffles. Check: 10,000 generated passwords were tested for a lowercase letter, an uppercase letter, a digit and a symbol, and 0 were missing any. The two failed users were then onboarded successfully.</li>
+</ul>
+<ul>
+<li><strong>Failed creates left disabled accounts behind.</strong> After the two password failures, <code>bbrooks</code> and <code>ffoster</code> existed as disabled accounts, so a retry failed with &quot;name already in use&quot;. Fix: if <code>New-ADUser</code> fails, the onboarding script now removes the half-made account before logging the error.</li>
+<li><strong>Duplicate names collide.</strong> Two people named &quot;Ben Brooks&quot; would clash on the AD object name even with different usernames. Fix: if the name is already taken, the object name becomes &quot;Ben Brooks (bbrooks2)&quot; while the display name stays &quot;Ben Brooks&quot;.</li>
+</ul>
+<ul>
+<li><strong>Timing hid the temporary passwords.</strong> Wrapping the onboarding run in <code>Measure-Command</code> swallowed the password table, so the passwords were never shown. Fix: the timed commands now end in <code>| Out-Host</code> inside the braces.</li>
+<li><strong>A hand-patched script lost a function.</strong> Pasting the new password generator over a local copy also deleted <code>Get-UniqueSam</code>, so every user failed with &quot;term not recognized&quot;. Fix: replace the whole script file from the runbook instead of patching functions.</li>
+</ul>
 <p><strong>Lessons</strong></p>
 <ul>
 <li>Always dry-run with <code>-WhatIf</code> first, then verify the real result with <code>Get-ADUser</code> and <code>icacls</code>. The log said everything succeeded, but only the permission check showed the missing access.</li>
-<li>Archiving and restoring home folders resets their permissions, so restore steps must re-apply the user's access.</li>
+<li>Archiving and restoring home folders resets their permissions, so restore steps must re-apply the user&#39;s access.</li>
 <li>Keep the group backup file from offboarding: it is what makes reactivation restore the original access.</li>
+</ul>
+<ul>
+<li>Test at volume. The password bug hit 2 of 10 users, so single-user tests would never have shown it. After the fix, a 10,000-password check gave far stronger evidence than one clean run.</li>
+<li>A step that fails must clean up after itself, or the retry hits the leftovers.</li>
 </ul>
 
     </div>
